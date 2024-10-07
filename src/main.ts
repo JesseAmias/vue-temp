@@ -7,6 +7,7 @@ import { VueQueryPlugin } from '@tanstack/vue-query'
 import { queryConfig } from '@/lib/vue-query'
 import '@/assets/theme/index.scss'
 
+
 const app = createApp(App)
 
 app.use(createPinia())

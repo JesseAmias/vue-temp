@@ -48,7 +48,7 @@ export default ({ mode }: { mode: string }) => {
     css: {
       preprocessorOptions: {
         scss: {
-          additionalData: `@use "@/assets/styles/var.scss" as *;`
+          additionalData: `@use "@/assets/theme/var.scss" as *;`
         }
       }
     },

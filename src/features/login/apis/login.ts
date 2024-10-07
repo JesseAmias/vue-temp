@@ -4,18 +4,18 @@ import { useLoginStoreHook } from '@/stores/login'
 import { useMutation } from '@tanstack/vue-query'
 import type { ErrorType } from '../type'
 
-type UserWebParam = {
+type loginParam = {
   /** 用户名 */
   userName: string
   /** 密码 */
   userPwd: string
 }
-interface postLoginResponse extends ErrorType {
+interface LoginResponse extends ErrorType {
   data?: {
     loginSuc: boolean
   }
 }
-export const postLogin = (data: UserWebParam): Promise<postLoginResponse> => {
+export const postLogin = (data: loginParam): Promise<LoginResponse> => {
   return axios.post('/api/login', {
     ...data
   })
@@ -30,7 +30,7 @@ export const useLogin = ({ config }: UsePostLoginOption = {}) => {
   const store = useLoginStoreHook()
   return useMutation({
     mutationFn: postLogin,
-    onSuccess(data) {
+    onSuccess(data: LoginResponse) {
       if (data.code === 'SUCCESS' && data.data?.loginSuc) {
         store.patchLogin(true)
         router.replace({
