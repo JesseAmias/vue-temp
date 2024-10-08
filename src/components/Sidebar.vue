@@ -50,4 +50,6 @@ const toggleCollapse = () => {
 const handleSelect = (index) => {
   activeIndex.value = index;
 };
+
+console.log(collapsed.value);
 </script>
