@@ -15,9 +15,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import Sidebar from "@/components/Sidebar.vue";
-</script>
+<script setup lang="ts"></script>
 
 <style scoped>
 /* Add any global styles here if needed */

@@ -1,0 +1,1 @@
+import{_ as a,q as o,v as r,x as s}from"./index-Bc6aD954.js";const t={};function n(c,e){return o(),r("div",null,e[0]||(e[0]=[s("h1",null,"Dashboard",-1)]))}const _=a(t,[["render",n],["__scopeId","data-v-9847ee72"]]);export{_ as default};
