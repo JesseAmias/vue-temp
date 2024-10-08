@@ -1,17 +1,16 @@
-import Layout from '@/components/Layout.vue'
+import Layout from "@/components/Layout.vue";
 
-const Dashboard = () => import(/* webpackChunkName: "Dashboard" */ '../components/Dashboard.vue')
-
+const Dashboard = () => import(/* webpackChunkName: "Dashboard" */ "../components/Dashboard.vue");
 
 export const adminRoutes = [
   {
-    path: '/admin',
+    path: "/admin",
     component: Layout,
     children: [
       {
-        path: 'dashboard',
+        path: "dashboard",
         component: Dashboard,
-      }
-    ]
-  }
-]
+      },
+    ],
+  },
+];

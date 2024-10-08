@@ -1,4 +1,4 @@
-import Axios, { AxiosError } from 'axios'
+import Axios, { AxiosError } from "axios";
 export const HTTP_STATUS = {
   SUCCESS: 200,
   CREATED: 201,
@@ -10,12 +10,12 @@ export const HTTP_STATUS = {
   SERVER_ERROR: 500,
   BAD_GATEWAY: 502,
   SERVICE_UNAVAILABLE: 503,
-  GATEWAY_TIMEOUT: 504
-}
+  GATEWAY_TIMEOUT: 504,
+};
 
 const handleHttpCode = (error: AxiosError<{ code: string; msg: string }>) => {
   //const code = error.response?.status;
-  return Promise.reject(error)
+  return Promise.reject(error);
   // switch (code) {
   //   case HTTP_STATUS.AUTHENTICATE: {
   //     return Promise.reject(error);
@@ -24,27 +24,27 @@ const handleHttpCode = (error: AxiosError<{ code: string; msg: string }>) => {
   //     return Promise.reject(error);
   //   }
   // }
-}
+};
 
 export const axios = Axios.create({
-  baseURL: ''
-})
+  baseURL: "",
+});
 
 // 请求拦截
 axios.interceptors.request.use((config) => {
   if (config && config.headers) {
-    config.headers.Accept = 'application/json'
+    config.headers.Accept = "application/json";
   }
 
-  return config
-})
+  return config;
+});
 
 // 响应拦截
 axios.interceptors.response.use(
   (response) => {
-    return response.data
+    return response.data;
   },
   (error) => {
-    return handleHttpCode(error)
-  }
-)
+    return handleHttpCode(error);
+  },
+);

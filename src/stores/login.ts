@@ -1,18 +1,18 @@
-import { defineStore } from 'pinia'
-import { store } from './index'
+import { defineStore } from "pinia";
+import { store } from "./index";
 
 export const useLoginStore = defineStore({
-  id: 'login',
+  id: "login",
   state: () => ({
-    isLogin: false
+    isLogin: false,
   }),
   actions: {
     async patchLogin(isLogin: boolean) {
-      this.isLogin = isLogin
-    }
-  }
-})
+      this.isLogin = isLogin;
+    },
+  },
+});
 
 export function useLoginStoreHook() {
-  return useLoginStore(store)
+  return useLoginStore(store);
 }

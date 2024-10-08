@@ -1,10 +1,10 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
-import type { RouteRecordRaw } from 'vue-router'
-import { loginRoutes } from '@/features/login'
-import { adminRoutes } from '@/features/admin'
+import { createRouter, createWebHashHistory } from "vue-router";
+import type { RouteRecordRaw } from "vue-router";
+import { loginRoutes } from "@/features/login";
+import { adminRoutes } from "@/features/admin";
 
 // 合并所有路由
-const routes: RouteRecordRaw[] = [...loginRoutes, ...adminRoutes]
+const routes: RouteRecordRaw[] = [...loginRoutes, ...adminRoutes];
 
 // 创建路由实例
 const router = createRouter({
@@ -15,16 +15,16 @@ const router = createRouter({
       // 如果目标路由有hash，滚动到对应的元素
       return {
         el: to.hash,
-        behavior: 'smooth',
-      }
+        behavior: "smooth",
+      };
     }
     // 否则滚动到页面顶部
     return {
       top: 0,
       left: 0,
-      behavior: 'smooth',
-    }
-  }
-})
+      behavior: "smooth",
+    };
+  },
+});
 
-export default router
+export default router;

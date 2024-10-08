@@ -1,10 +1,9 @@
-
-const Login = () => import(/* webpackChunkName: "Login" */ '../components/Login.vue')
+const Login = () => import(/* webpackChunkName: "Login" */ "../components/Login.vue");
 
 // 展示扩展屏幕等硬件设备信息
 export const loginRoutes = [
   {
-    path: '/login',
+    path: "/login",
     component: Login,
-  }
-]
+  },
+];

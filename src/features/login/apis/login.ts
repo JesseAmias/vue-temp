@@ -1,43 +1,43 @@
-import { axios } from '@/lib/axios'
-import type { MutationConfig } from '@/lib/vue-query'
-import { useLoginStoreHook } from '@/stores/login'
-import { useMutation } from '@tanstack/vue-query'
-import type { ErrorType } from '../type'
+import { axios } from "@/lib/axios";
+import type { MutationConfig } from "@/lib/vue-query";
+import { useLoginStoreHook } from "@/stores/login";
+import { useMutation } from "@tanstack/vue-query";
+import type { ErrorType } from "../type";
 
 type loginParam = {
   /** 用户名 */
-  userName: string
+  userName: string;
   /** 密码 */
-  userPwd: string
-}
+  userPwd: string;
+};
 interface LoginResponse extends ErrorType {
   data?: {
-    loginSuc: boolean
-  }
+    loginSuc: boolean;
+  };
 }
 export const postLogin = (data: loginParam): Promise<LoginResponse> => {
-  return axios.post('/api/login', {
-    ...data
-  })
-}
+  return axios.post("/api/login", {
+    ...data,
+  });
+};
 
 type UsePostLoginOption = {
-  config?: MutationConfig<typeof postLogin>
-}
+  config?: MutationConfig<typeof postLogin>;
+};
 
 export const useLogin = ({ config }: UsePostLoginOption = {}) => {
-  const router = useRouter()
-  const store = useLoginStoreHook()
+  const router = useRouter();
+  const store = useLoginStoreHook();
   return useMutation({
     mutationFn: postLogin,
     onSuccess(data: LoginResponse) {
-      if (data.code === 'SUCCESS' && data.data?.loginSuc) {
-        store.patchLogin(true)
+      if (data.code === "SUCCESS" && data.data?.loginSuc) {
+        store.patchLogin(true);
         router.replace({
-          path: '/home'
-        })
+          path: "/home",
+        });
       }
     },
-    ...config
-  })
-}
+    ...config,
+  });
+};
