@@ -6,9 +6,7 @@
     <!-- Main Content -->
     <div class="flex-1 flex flex-col overflow-hidden">
       <!-- Header -->
-      <header class="bg-white shadow-md">
-        
-      </header>
+      <header class="bg-white shadow-md"></header>
 
       <!-- Page content -->
       <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
@@ -19,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import Sidebar from '@/components/Sidebar.vue';
+import Sidebar from '@/components/Sidebar.vue'
 </script>
 
 <style scoped>
