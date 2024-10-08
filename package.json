@@ -37,7 +37,9 @@
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.0",
     "eslint-plugin-vue": "^9.23.0",
+    "husky": "^9.1.6",
     "jsdom": "^24.1.0",
+    "lint-staged": "^15.2.10",
     "npm-run-all2": "^6.2.0",
     "postcss": "^8.4.47",
     "prettier": "^3.2.5",
@@ -50,5 +52,16 @@
     "vite-plugin-vue-devtools": "^7.3.1",
     "vitest": "^1.6.0",
     "vue-tsc": "^2.0.21"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,vue}": [
+      "npm run prettier",
+      "npm run format"
+    ]
   }
 }
