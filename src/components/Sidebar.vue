@@ -1,7 +1,7 @@
 <template>
   <div
     class="h-screen bg-white shadow-lg transition-all duration-300 ease-in-out"
-    :class="{ 'w-64': !collapsed, 'w-20': collapsed }"
+    :class="{ 'w-64': !collapsed, 'w-16': collapsed }"
   >
     <div class="flex items-center justify-between p-4">
       <div class="flex items-center space-x-2" v-if="!collapsed">
