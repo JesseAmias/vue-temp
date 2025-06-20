@@ -11,13 +11,16 @@ import { ElementPlusResolver } from "unplugin-vue-components/resolvers";
 import basicSsl from "@vitejs/plugin-basic-ssl";
 import path from "node:path";
 
+import { viteMockServe } from "vite-plugin-mock";
+
 // https://vitejs.dev/config/
 const pathSrc = fileURLToPath(new URL("./src", import.meta.url));
 
 export default ({ mode }: { mode: string }) => {
   const VITE_APP_BASE_API: string = loadEnv(mode, process.cwd()).VITE_APP_BASE_API;
   return defineConfig({
-    base: "/ui/",
+    // base: "/ui/",
+    base: "./",
     resolve: {
       alias: {
         "@": pathSrc,
@@ -45,6 +48,11 @@ export default ({ mode }: { mode: string }) => {
       }),
       basicSsl(),
       vueDevTools(),
+      viteMockServe({
+        mockPath: "mock",
+        enable: true,
+        logger: true, // 打印请求日志（调试用）
+      }),
     ],
     css: {
       preprocessorOptions: {
@@ -77,8 +85,9 @@ export default ({ mode }: { mode: string }) => {
       },
       coverage: {
         provider: "v8",
-        reporter: ["text", "lcov"],
+        reporter: ["text", "lcov", "html"],
         reportsDirectory: "./coverage",
+        enabled: true,
       },
     },
   });

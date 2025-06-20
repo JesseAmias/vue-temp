@@ -1,6 +1,5 @@
 import { axios } from "@/lib/axios";
 import type { MutationConfig } from "@/lib/vue-query";
-import { useLoginStoreHook } from "@/stores/login";
 import { useMutation } from "@tanstack/vue-query";
 import type { ErrorType } from "../type";
 
@@ -11,6 +10,7 @@ type loginParam = {
   userPwd: string;
 };
 interface LoginResponse extends ErrorType {
+  message: string;
   data?: {
     loginSuc: boolean;
   };
@@ -26,18 +26,8 @@ type UsePostLoginOption = {
 };
 
 export const useLogin = ({ config }: UsePostLoginOption = {}) => {
-  const router = useRouter();
-  const store = useLoginStoreHook();
   return useMutation({
     mutationFn: postLogin,
-    onSuccess(data: LoginResponse) {
-      if (data.code === "SUCCESS" && data.data?.loginSuc) {
-        store.patchLogin(true);
-        router.replace({
-          path: "/home",
-        });
-      }
-    },
     ...config,
   });
 };

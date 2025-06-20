@@ -14,9 +14,9 @@ export const HTTP_STATUS = {
 };
 
 const handleHttpCode = (error: AxiosError<{ code: string; msg: string }>) => {
-  //const code = error.response?.status;
+  // const code = error.response?.status;
   return Promise.reject(error);
-  // switch (code) {
+  // switch (error.code) {
   //   case HTTP_STATUS.AUTHENTICATE: {
   //     return Promise.reject(error);
   //   }
