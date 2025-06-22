@@ -7,7 +7,7 @@ export default [
 
       const users = [
         { userName: "admin", userPwd: "123" },
-        { userName: "test", userPwd: "abc123" },
+        { userName: "test", userPwd: "Aa!123456" },
       ];
 
       const user = users.find((user) => user.userName === userName);

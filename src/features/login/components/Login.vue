@@ -8,12 +8,21 @@
         </div>
 
         <el-form ref="ruleFormRef" size="large" label-position="top" :model="formData" :rules="rules" label-width="auto">
-          <el-form-item label="用户名">
-            <el-input v-model="formData.username" autocomplete="username" />
+          <el-form-item label="用户名" prop="username">
+            <el-input v-model="formData.username" />
           </el-form-item>
-          <el-form-item label="密码">
-            <el-input v-model="formData.password" type="password" />
+          <el-form-item label="密码" prop="password">
+            <!-- <el-input v-model="formData.password" type="password" /> -->
+            <el-input v-model="formData.password" :type="passwordView ? 'text' : 'password'" placeholder="请输入密码">
+              <template #suffix>
+                <span @click="passwordView = !passwordView" class="cursor-pointer">
+                  <el-icon v-if="passwordView" :size="16"><View /></el-icon>
+                  <el-icon v-else :size="16"><Hide /></el-icon>
+                </span>
+              </template>
+            </el-input>
           </el-form-item>
+
           <el-form-item>
             <div class="flex flex-1 items-center justify-between">
               <div class="flex items-center">
@@ -22,66 +31,14 @@
               </div>
 
               <div class="text-sm">
-                <a href="#" @click="forgotPassword" class="font-medium text-indigo-600 hover:text-indigo-500"> 忘记密码？ </a>
+                <a href="javascript:(0)" @click="forgotPassword" class="font-medium text-indigo-600 hover:text-indigo-500"> 忘记密码？ </a>
               </div>
             </div>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="handleLogin" style="width: 100%" :disabled="hasError">登录</el-button>
+            <el-button type="primary" @click="() => debounceLogin(ruleFormRef)" style="width: 100%">登录</el-button>
           </el-form-item>
         </el-form>
-        <!-- <form class="space-y-6" @submit.prevent="handleLogin">
-          <div>
-            <label for="username" class="block text-sm font-medium text-gray-700">用户名</label>
-            <div class="mt-1">
-              <input
-                id="username"
-                name="username"
-                type="text"
-                autocomplete="username"
-                required
-                v-model="username"
-                class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label for="password" class="block text-sm font-medium text-gray-700">密码</label>
-            <div class="mt-1">
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autocomplete="current-password"
-                required
-                v-model="password"
-                class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
-            </div>
-          </div>
-
-          <div class="flex items-center justify-between">
-            <div class="flex items-center">
-              <input id="remember-me" name="remember-me" type="checkbox" v-model="rememberMe" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" />
-              <label for="remember-me" class="ml-2 block text-sm text-gray-900"> 记住我 </label>
-            </div>
-
-            <div class="text-sm">
-              <a href="#" @click="forgotPassword" class="font-medium text-indigo-600 hover:text-indigo-500"> 忘记密码？ </a>
-            </div>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              :disabled="hasError"
-            >
-              登录
-            </button>
-          </div>
-        </form> -->
       </div>
     </div>
   </div>
@@ -92,6 +49,8 @@ import { useLogin } from "@/features/login/apis";
 import { useLoginStoreHook } from "@/stores/login";
 import CryptoJS from "crypto-js";
 import type { FormInstance, FormRules } from "element-plus";
+import { View, Hide } from "@element-plus/icons-vue";
+import { useDebounceFn } from "@vueuse/core";
 
 interface RuleForm {
   username: string;
@@ -101,10 +60,6 @@ interface RuleForm {
 const router = useRouter();
 const store = useLoginStoreHook();
 
-// const username = ref("");
-// const password = ref("");
-
-const hasError = ref(false); // New reactive variable for error state
 const rememberMe = ref(false);
 
 const ruleFormRef = ref<FormInstance>();
@@ -113,10 +68,20 @@ const formData = reactive<RuleForm>({
   password: "",
 });
 
+const passwordView = ref(false);
+
 const rules = reactive<FormRules<RuleForm>>({
   username: [
-    { required: true, message: "Please input Activity name", trigger: "blur" },
-    { min: 3, max: 5, message: "Length should be 3 to 5", trigger: "blur" },
+    { required: true, message: "请输入用户名", trigger: "blur" },
+    { min: 4, max: 20, message: "用户名长度为 4-20 个字符", trigger: "blur" },
+  ],
+  password: [
+    { required: true, message: "请输入密码", trigger: "blur" },
+    {
+      pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{8,20}$/,
+      message: "格式错误，8-20位，需同时包含大小写字母、数字、特殊字符",
+      trigger: "blur",
+    },
   ],
 });
 
@@ -130,9 +95,6 @@ onMounted(() => {
     rememberMe.value = true;
   }
 });
-const validateForm = () => {
-  hasError.value = !formData.username || !formData.password; // Check if fields are empty
-};
 
 const encryptUserData = (username: string, password: string) => {
   const encryptedUsername = CryptoJS.AES.encrypt(username, "secretKey").toString();
@@ -183,10 +145,20 @@ const { mutate: loginMutate } = useLogin({
   },
 });
 
-const handleLogin = async () => {
-  validateForm(); // Call validation before login
-  if (hasError.value) return; // Prevent login if validation fails
-  loginMutate({ userName: formData.username, userPwd: formData.password });
+const debounceLogin = useDebounceFn((formEl: FormInstance | undefined) => {
+  handleLogin(formEl);
+}, 300);
+
+const handleLogin = async (formEl: FormInstance | undefined) => {
+  if (!formEl) return;
+  await formEl.validate((valid, fields) => {
+    if (valid) {
+      console.log("submit!");
+      loginMutate({ userName: formData.username, userPwd: formData.password });
+    } else {
+      console.log("error submit!", fields);
+    }
+  });
 };
 
 const forgotPassword = () => {

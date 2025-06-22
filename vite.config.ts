@@ -10,6 +10,8 @@ import Components from "unplugin-vue-components/vite";
 import { ElementPlusResolver } from "unplugin-vue-components/resolvers";
 import basicSsl from "@vitejs/plugin-basic-ssl";
 import path from "node:path";
+import Icons from "unplugin-icons/vite";
+import IconsResolver from "unplugin-icons/resolver";
 
 import { viteMockServe } from "vite-plugin-mock";
 
@@ -34,14 +36,25 @@ export default ({ mode }: { mode: string }) => {
           ElementPlusResolver({
             importStyle: "sass",
           }),
+          // 自动注册图标组件
+          IconsResolver({
+            enabledCollections: ["ep"],
+          }),
         ],
         dts: path.resolve(pathSrc, "components.d.ts"),
+      }),
+      Icons({
+        autoInstall: true,
       }),
       AutoImport({
         imports: ["vue", "vue-router", "pinia"],
         resolvers: [
           ElementPlusResolver({
             importStyle: "sass",
+          }),
+          // 自动导入图标组件
+          IconsResolver({
+            prefix: "Icon",
           }),
         ],
         dts: path.resolve(pathSrc, "auto-imports.d.ts"),
