@@ -1,250 +1,147 @@
-<!-- CustomDropdown.vue -->
 <template>
-  <div class="custom-dropdown" :class="{ 'is-disabled': disabled }">
-    <!-- 下拉触发器 -->
+  <div class="relative inline-block" ref="dropdownRef">
+    <!-- 触发器 -->
     <div
-      ref="triggerRef"
-      class="dropdown-trigger"
-      :class="[
-        'flex items-center justify-between px-3 py-2 border rounded-md cursor-pointer transition-all duration-200',
-        {
-          'border-blue-500 ring-2 ring-blue-200': isOpen,
-          'border-gray-300 hover:border-gray-400': !isOpen && !disabled,
-          'border-gray-200 bg-gray-50 cursor-not-allowed': disabled,
-          'bg-white': !disabled,
-        },
-      ]"
       @click="toggleDropdown"
+      :class="[
+        'flex items-center justify-between px-3 py-2 border rounded-md cursor-pointer transition-colors',
+        'hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+        isOpen ? 'border-blue-500 ring-2 ring-blue-500' : 'border-gray-300',
+        disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white',
+      ]"
+      :style="{ minWidth: width }"
     >
-      <div class="flex-1 truncate">
-        <span v-if="displayText" class="text-gray-900">{{ displayText }}</span>
-        <span v-else class="text-gray-400">{{ placeholder }}</span>
-      </div>
-      <el-icon class="text-gray-400 transition-transform duration-200" :class="{ 'rotate-180': isOpen }">
+      <span :class="['flex-1 text-left', getDisplayTextClass()]"> {{ displayText }} </span>
+      <el-icon :class="['ml-2 transition-transform', isOpen ? 'rotate-180' : '']" :size="16">
         <ArrowDown />
       </el-icon>
     </div>
 
-    <!-- 下拉菜单 -->
-    <Teleport to="body">
-      <div v-if="isOpen" ref="dropdownRef" class="dropdown-menu fixed z-50 bg-white border border-gray-200 rounded-md shadow-lg min-w-[200px] max-h-[300px] overflow-y-auto" :style="dropdownStyle">
-        <!-- 搜索框 -->
-        <div v-if="filterable" class="p-2 border-b border-gray-100">
-          <el-input v-model="searchKeyword" size="small" placeholder="搜索选项..." clearable @input="handleSearch" class="h-[35px]">
-            <template #prefix>
-              <el-icon><Search /></el-icon>
-            </template>
-          </el-input>
+    <!-- 下拉面板 -->
+    <Transition
+      enter-active-class="transition ease-out duration-200"
+      enter-from-class="opacity-0 translate-y-1"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition ease-in duration-150"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 translate-y-1"
+    >
+      <div v-show="isOpen" :class="['absolute z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg', 'max-h-60 overflow-auto']" :style="{ minWidth: width }">
+        <!-- 搜索框 (可选) -->
+        <div v-if="searchable" class="p-2 border-b border-gray-100">
+          <input
+            v-model="searchKeyword"
+            type="text"
+            :placeholder="searchPlaceholder"
+            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+            @click.stop
+          />
         </div>
 
-        <!-- 全选/清空按钮 (多选模式) -->
-        <div v-if="multiple && showSelectAll" class="p-2 border-b border-gray-100 flex gap-2">
-          <el-button size="small" text @click="selectAll">全选</el-button>
-          <el-button size="small" text @click="clearAll">清空</el-button>
+        <!-- 全选选项 (多选模式下) -->
+        <div v-if="multiple && showSelectAll" @click="handleSelectAll" class="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100">
+          <input type="checkbox" :checked="isAllSelected" :indeterminate="isIndeterminate" class="mr-2 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+          <span class="text-sm text-gray-700">全选</span>
         </div>
 
         <!-- 选项列表 -->
-        <div class="py-1">
-          <!-- 分组选项 -->
-          <template v-if="isGrouped">
-            <div v-for="group in filteredGroupedOptions" :key="group.label" class="group-section">
-              <div class="group-header px-3 py-2 text-sm font-medium text-gray-500 bg-gray-50">
-                {{ group.label }}
-              </div>
-              <div
-                v-for="option in group.options"
-                :key="getOptionKey(option)"
-                class="option-item flex items-center px-3 py-2 cursor-pointer transition-colors duration-150"
-                :class="[getOptionClass(option), { 'bg-blue-50 text-blue-600': isSelected(option) }]"
-                @click="handleOptionClick(option)"
-                @mouseenter="handleOptionHover(option)"
-              >
-                <!-- 多选复选框 -->
-                <el-checkbox v-if="multiple" :model-value="isSelected(option)" class="mr-2" @change="handleOptionClick(option)" />
+        <div v-if="filteredOptions.length === 0" class="px-3 py-2 text-sm text-gray-500 text-center">
+          {{ noDataText }}
+        </div>
 
-                <!-- 选项内容 -->
-                <div class="flex-1">
-                  <div class="flex items-center">
-                    <!-- 自定义图标 -->
-                    <el-icon v-if="option.icon" class="mr-2 text-gray-400">
-                      <component :is="option.icon" />
-                    </el-icon>
+        <div
+          v-for="option in filteredOptions"
+          :key="getOptionKey(option)"
+          @click="handleOptionClick(option)"
+          :class="['flex items-center px-3 py-2 cursor-pointer transition-colors', 'hover:bg-blue-50', isOptionSelected(option) ? 'bg-blue-100 text-blue-700' : 'text-gray-700']"
+        >
+          <!-- 多选框 -->
+          <input v-if="multiple" type="checkbox" :checked="isOptionSelected(option)" class="mr-2 text-blue-600 focus:ring-blue-500" @click.stop />
 
-                    <!-- 选项标签 -->
-                    <span class="truncate">{{ getOptionLabel(option) }}</span>
-
-                    <!-- 选项描述 -->
-                    <span v-if="option.description" class="ml-2 text-xs text-gray-400 truncate">
-                      {{ option.description }}
-                    </span>
-                  </div>
-                </div>
-
-                <!-- 单选选中标记 -->
-                <el-icon v-if="!multiple && isSelected(option)" class="text-blue-600 ml-2">
-                  <Check />
-                </el-icon>
-
-                <!-- 级联箭头 -->
-                <el-icon v-if="option.children && option.children.length" class="text-gray-400 ml-2">
-                  <ArrowRight />
-                </el-icon>
-              </div>
+          <!-- 选项内容 -->
+          <div class="flex-1">
+            <div class="text-sm font-medium">
+              {{ getOptionLabel(option) }}
             </div>
-          </template>
+          </div>
 
-          <!-- 普通选项 -->
-          <template v-else>
-            <div
-              v-for="option in filteredOptions"
-              :key="getOptionKey(option)"
-              class="option-item flex items-center px-3 py-2 cursor-pointer transition-colors duration-150"
-              :class="[getOptionClass(option), { 'bg-blue-50 text-blue-600': isSelected(option) }]"
-              @click="handleOptionClick(option)"
-              @mouseenter="handleOptionHover(option)"
-            >
-              <!-- 多选复选框 -->
-              <el-checkbox v-if="multiple" :model-value="isSelected(option)" class="mr-2" @change="handleOptionClick(option)" />
-
-              <!-- 选项内容 -->
-              <div class="flex-1">
-                <div class="flex items-center">
-                  <!-- 自定义图标 -->
-                  <el-icon v-if="option.icon" class="mr-2 text-gray-400">
-                    <component :is="option.icon" />
-                  </el-icon>
-
-                  <!-- 选项标签 -->
-                  <span class="truncate">{{ getOptionLabel(option) }}</span>
-
-                  <!-- 选项描述 -->
-                  <span v-if="option.description" class="ml-2 text-xs text-gray-400 truncate">
-                    {{ option.description }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- 单选选中标记 -->
-              <el-icon v-if="!multiple && isSelected(option)" class="text-blue-600 ml-2">
-                <Check />
-              </el-icon>
-
-              <!-- 级联箭头 -->
-              <el-icon v-if="option.children && option.children.length" class="text-gray-400 ml-2">
-                <ArrowRight />
-              </el-icon>
-            </div>
-
-            <!-- 无数据 -->
-            <div v-if="!filteredOptions.length" class="px-3 py-8 text-center text-gray-400 text-sm">
-              {{ searchKeyword ? "无匹配选项" : "暂无数据" }}
-            </div>
-          </template>
+          <!-- 选中标记 (单选模式) -->
+          <el-Icon v-if="!multiple && isOptionSelected(option)" class="text-blue-600" :size="16">
+            <Check />
+          </el-Icon>
         </div>
       </div>
-    </Teleport>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-// import { ref, computed, watch, nextTick, onMounted, onUnmounted, reactive } from "vue";
-import { ArrowDown, Search, Check, ArrowRight } from "@element-plus/icons-vue";
+import { ArrowDown, Check } from "@element-plus/icons-vue";
+import type { DropdownOption } from "../type";
 
-// 选项类型定义
-interface DropdownOption {
-  label: string;
-  value: any;
-  disabled?: boolean;
-  icon?: any;
-  description?: string;
-  children?: DropdownOption[];
-  [key: string]: any;
-}
-
-// 分组选项类型
-interface GroupedOption {
-  label: string;
-  options: DropdownOption[];
-}
-
-// Props 定义
+// 定义组件属性
 interface Props {
+  // 基础配置
   modelValue?: any;
-  options?: DropdownOption[] | GroupedOption[];
-  multiple?: boolean;
+  options: DropdownOption[];
   placeholder?: string;
   disabled?: boolean;
   clearable?: boolean;
-  filterable?: boolean;
+  width?: string;
+
+  // 选择模式
+  multiple?: boolean;
   showSelectAll?: boolean;
-  valueKey?: string;
+
+  // 搜索功能
+  searchable?: boolean;
+  searchPlaceholder?: string;
+
+  // 自定义字段映射
   labelKey?: string;
-  size?: "large" | "default" | "small";
-  maxHeight?: number;
-  popperClass?: string;
+  valueKey?: string;
+
+  // 选项无数据时显示文本
+  noDataText?: string;
+
+  // 筛选类型
+  filterType?: "subject" | "score" | "batch" | "custom";
 }
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: undefined,
   options: () => [],
-  multiple: false,
   placeholder: "请选择",
   disabled: false,
-  clearable: false,
-  filterable: false,
+  clearable: true,
+  width: "200px",
+  multiple: false,
   showSelectAll: true,
-  valueKey: "value",
+  searchable: false,
+  searchPlaceholder: "搜索选项...",
   labelKey: "label",
-  size: "default",
-  maxHeight: 300,
-  popperClass: "",
+  valueKey: "value",
+  noDataText: "暂无数据",
+  filterType: "custom",
 });
 
-// Emits 定义
 const emit = defineEmits<{
   "update:modelValue": [value: any];
-  change: [value: any];
+  change: [value: any, options: DropdownOption | DropdownOption[]];
   clear: [];
   "visible-change": [visible: boolean];
-  "option-hover": [option: DropdownOption];
 }>();
 
 const isOpen = ref(false);
 const searchKeyword = ref("");
-const triggerRef = ref<HTMLElement>();
 const dropdownRef = ref<HTMLElement>();
-const dropdownStyle = ref({});
 
-const isGrouped = computed(() => {
-  return props.options.length > 0 && "options" in props.options[0];
+onMounted(() => {
+  document.addEventListener("click", handleClickOutside);
 });
 
-const flatOptions = computed(() => {
-  if (isGrouped.value) {
-    return (props.options as GroupedOption[]).reduce((acc, group) => {
-      return acc.concat(group.options);
-    }, [] as DropdownOption[]);
-  }
-  return props.options as DropdownOption[];
-});
-
-const filteredOptions = computed(() => {
-  if (!searchKeyword.value) return flatOptions.value;
-
-  const keyword = searchKeyword.value.toLowerCase();
-  return flatOptions.value.filter((option) => getOptionLabel(option).toLowerCase().includes(keyword) || (option.description && option.description.toLowerCase().includes(keyword)));
-});
-
-const filteredGroupedOptions = computed(() => {
-  if (!isGrouped.value) return [];
-
-  const keyword = searchKeyword.value.toLowerCase();
-  return (props.options as GroupedOption[])
-    .map((group) => ({
-      ...group,
-      options: group.options.filter((option) => !keyword || getOptionLabel(option).toLowerCase().includes(keyword) || (option.description && option.description.toLowerCase().includes(keyword))),
-    }))
-    .filter((group) => group.options.length > 0);
+onUnmounted(() => {
+  document.removeEventListener("click", handleClickOutside);
 });
 
 const selectedValues = computed(() => {
@@ -254,225 +151,169 @@ const selectedValues = computed(() => {
   return props.modelValue !== undefined ? [props.modelValue] : [];
 });
 
-const displayText = computed(() => {
-  if (!selectedValues.value.length) return "";
+const filteredOptions = computed(() => {
+  let options = props.options.filter((option) => !option.disabled);
 
-  const selectedOptions = flatOptions.value.filter((option) => selectedValues.value.includes(getOptionValue(option)));
+  if (props.searchable && searchKeyword.value) {
+    const keyword = searchKeyword.value.toLowerCase();
+    options = options.filter((option) => getOptionLabel(option).toLowerCase().includes(keyword));
+  }
+
+  return options;
+});
+
+const displayText = computed(() => {
+  if (selectedValues.value.length === 0) {
+    return props.placeholder;
+  }
 
   if (props.multiple) {
-    if (selectedOptions.length === 1) {
-      return getOptionLabel(selectedOptions[0]);
-    } else if (selectedOptions.length > 1) {
-      return `已选择 ${selectedOptions.length} 项`;
+    if (selectedValues.value.length === 1) {
+      const option = props.options.find((opt) => getOptionValue(opt) === selectedValues.value[0]);
+      return option ? getOptionLabel(option) : props.placeholder;
     }
-    return "";
+    return `已选择 ${selectedValues.value.length} 项`;
   } else {
-    return selectedOptions.length ? getOptionLabel(selectedOptions[0]) : "";
+    const option = props.options.find((opt) => getOptionValue(opt) === props.modelValue);
+    return option ? getOptionLabel(option) : props.placeholder;
   }
 });
 
-// 方法
-const getOptionKey = (option: DropdownOption) => {
-  return getOptionValue(option);
+const isAllSelected = computed(() => {
+  if (!props.multiple || filteredOptions.value.length === 0) return false;
+  return filteredOptions.value.every((option) => selectedValues.value.includes(getOptionValue(option)));
+});
+
+const isIndeterminate = computed(() => {
+  if (!props.multiple) return false;
+  const selectedCount = filteredOptions.value.filter((option) => selectedValues.value.includes(getOptionValue(option))).length;
+  return selectedCount > 0 && selectedCount < filteredOptions.value.length;
+});
+
+// 监听器
+watch(
+  () => isOpen.value,
+  (newVal) => {
+    if (newVal) {
+      searchKeyword.value = "";
+    }
+  },
+);
+
+// 获取选项标签
+const getOptionLabel = (option: DropdownOption): string => {
+  return option[props.labelKey] || option.label || String(option);
 };
 
-const getOptionValue = (option: DropdownOption) => {
-  return option[props.valueKey];
+const getOptionValue = (option: DropdownOption): any => {
+  return option[props.valueKey] !== undefined ? option[props.valueKey] : option.value;
 };
 
-const getOptionLabel = (option: DropdownOption) => {
-  return option[props.labelKey];
+const getOptionKey = (option: DropdownOption): string => {
+  return `${getOptionValue(option)}_${getOptionLabel(option)}`;
 };
 
-const isSelected = (option: DropdownOption) => {
+const getDisplayTextClass = (): string => {
+  console.log("selectedValues.value结果:\n", selectedValues.value);
+  return selectedValues.value.length === 0 ? "text-gray-400" : "text-gray-900";
+};
+
+const isOptionSelected = (option: DropdownOption): boolean => {
   return selectedValues.value.includes(getOptionValue(option));
-};
-
-const getOptionClass = (option: DropdownOption) => {
-  return {
-    "hover:bg-gray-50": !option.disabled && !isSelected(option),
-    "text-gray-400 cursor-not-allowed": option.disabled,
-    "cursor-pointer": !option.disabled,
-  };
 };
 
 const toggleDropdown = () => {
   if (props.disabled) return;
   isOpen.value = !isOpen.value;
-};
-
-const closeDropdown = () => {
-  isOpen.value = false;
+  emit("visible-change", isOpen.value);
 };
 
 const handleOptionClick = (option: DropdownOption) => {
-  if (option.disabled) return;
-
   const value = getOptionValue(option);
 
   if (props.multiple) {
-    const newValue = [...selectedValues.value];
-    const index = newValue.indexOf(value);
+    const newValues = [...selectedValues.value];
+    const index = newValues.indexOf(value);
 
     if (index > -1) {
-      newValue.splice(index, 1);
+      newValues.splice(index, 1);
     } else {
-      newValue.push(value);
+      newValues.push(value);
     }
 
-    emit("update:modelValue", newValue);
-    emit("change", newValue);
+    emit("update:modelValue", newValues);
+    emit(
+      "change",
+      newValues,
+      props.options.filter((opt) => newValues.includes(getOptionValue(opt))),
+    );
   } else {
     emit("update:modelValue", value);
-    emit("change", value);
-    closeDropdown();
+    emit("change", value, option);
+    isOpen.value = false;
+    emit("visible-change", false);
   }
 };
 
-const handleOptionHover = (option: DropdownOption) => {
-  emit("option-hover", option);
-};
+const handleSelectAll = () => {
+  if (!props.multiple) return;
 
-const selectAll = () => {
-  const allValues = flatOptions.value.filter((option) => !option.disabled).map((option) => getOptionValue(option));
-
-  emit("update:modelValue", allValues);
-  emit("change", allValues);
-};
-
-const clearAll = () => {
-  emit("update:modelValue", []);
-  emit("change", []);
-};
-
-const handleSearch = (value: string) => {
-  searchKeyword.value = value;
-};
-
-// 位置计算
-const updateDropdownPosition = async () => {
-  if (!isOpen.value || !triggerRef.value || !dropdownRef.value) return;
-
-  await nextTick();
-
-  const triggerRect = triggerRef.value.getBoundingClientRect();
-  const dropdownEl = dropdownRef.value;
-  const viewportHeight = window.innerHeight;
-  const viewportWidth = window.innerWidth;
-
-  let top = triggerRect.bottom + 4;
-  let left = triggerRect.left;
-
-  // 检查底部空间
-  if (top + dropdownEl.offsetHeight > viewportHeight) {
-    top = triggerRect.top - dropdownEl.offsetHeight - 4;
+  if (isAllSelected.value) {
+    // 取消全选
+    // newValues：选中的值中，没有包含在已过滤的选项中（如：某些值是disabled，保留其被选中状态）
+    const newValues = selectedValues.value.filter((val) => !filteredOptions.value.some((option) => getOptionValue(option) === val));
+    emit("update:modelValue", newValues);
+    emit(
+      "change",
+      newValues,
+      props.options.filter((opt) => newValues.includes(getOptionValue(opt))),
+    );
+  } else {
+    // 全选
+    const allValues = [...selectedValues.value];
+    filteredOptions.value.forEach((option) => {
+      const value = getOptionValue(option);
+      !allValues.includes(value) && allValues.push(value);
+    });
+    emit("update:modelValue", allValues);
+    emit(
+      "change",
+      allValues,
+      props.options.filter((opt) => allValues.includes(getOptionValue(opt))),
+    );
   }
-
-  // 检查右侧空间
-  if (left + dropdownEl.offsetWidth > viewportWidth) {
-    left = viewportWidth - dropdownEl.offsetWidth - 16;
-  }
-
-  // 确保不超出左边界
-  if (left < 16) {
-    left = 16;
-  }
-
-  dropdownStyle.value = {
-    top: `${top}px`,
-    left: `${left}px`,
-    minWidth: `${triggerRect.width}px`,
-    maxHeight: `${props.maxHeight}px`,
-  };
 };
 
-// 点击外部关闭
+const handleClear = () => {
+  if (props.multiple) {
+    emit("update:modelValue", []);
+    emit("change", [], []);
+  } else {
+    emit("update:modelValue", undefined);
+    emit("change", undefined, []);
+  }
+  emit("clear");
+};
+
+// 点击外部关闭下拉菜单
 const handleClickOutside = (event: MouseEvent) => {
-  if (!isOpen.value) return;
-
-  const target = event.target as HTMLElement;
-  if (!triggerRef.value?.contains(target) && !dropdownRef.value?.contains(target)) {
-    closeDropdown();
+  if (dropdownRef.value && !dropdownRef.value.contains(event.target as Node)) {
+    if (isOpen.value) {
+      isOpen.value = false;
+      emit("visible-change", false);
+    }
   }
 };
-
-// 生命周期
-onMounted(() => {
-  document.addEventListener("click", handleClickOutside);
-  window.addEventListener("scroll", updateDropdownPosition);
-  window.addEventListener("resize", updateDropdownPosition);
-});
-
-onUnmounted(() => {
-  document.removeEventListener("click", handleClickOutside);
-  window.removeEventListener("scroll", updateDropdownPosition);
-  window.removeEventListener("resize", updateDropdownPosition);
-});
-
-// 监听器
-watch(isOpen, (newVal) => {
-  emit("visible-change", newVal);
-  if (newVal) {
-    updateDropdownPosition();
-    searchKeyword.value = "";
-  }
-});
 
 // 暴露方法
 defineExpose({
-  focus: () => triggerRef.value?.focus(),
-  blur: closeDropdown,
-  clear: clearAll,
+  focus: () => dropdownRef.value?.focus(),
+  blur: () => {
+    isOpen.value = false;
+    emit("visible-change", false);
+  },
+  clear: handleClear,
 });
 </script>
 
-<style scoped>
-.custom-dropdown {
-  position: relative;
-  display: inline-block;
-  width: 100%;
-}
-
-.dropdown-trigger {
-  user-select: none;
-}
-
-.dropdown-menu {
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-.option-item {
-  user-select: none;
-}
-
-.group-header {
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.5;
-}
-
-.rotate-180 {
-  transform: rotate(180deg);
-}
-
-/* 滚动条样式 */
-.dropdown-menu::-webkit-scrollbar {
-  width: 6px;
-}
-
-.dropdown-menu::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.dropdown-menu::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-.dropdown-menu::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-</style>
+<style scoped lang="scss"></style>

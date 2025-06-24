@@ -33,12 +33,39 @@
       <div class="main-content bg-white px-10 py-6">
         <div class="filter-container mb-[10px]">
           <!-- 筛选区域 -->
-          <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+          <div class="py-4 bg-white border-b border-gray-200">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <!-- 科目筛选 -->
               <div class="flex items-center">
-                <label class="block text-sm font-medium text-gray-700 w-[60px]">科目</label>
-                <custom-dropdown v-model="filters.subjects" :options="subjectOptions" multiple placeholder="选择科目" filterable @change="handleFilterChange" />
+                <label class="block text-sm font-medium text-gray-700 mr-2">科目</label>
+                <CustomDropdown
+                  v-model="filters.subjects"
+                  :options="subjectOptions"
+                  placeholder="选择科目"
+                  :multiple="true"
+                  :searchable="true"
+                  filter-type="subject"
+                  width="100%"
+                  class="w-[140px]"
+                  @change="handleSubjectChange"
+                />
+              </div>
+
+              <!-- 分数段筛选 -->
+              <div class="flex items-center">
+                <label class="block text-sm font-medium text-gray-700 mr-2">分数段</label>
+                <CustomDropdown v-model="filters.scoreRange" :options="scoreRangeOptions" placeholder="选择分数段" filter-type="score" width="100%" @change="handleScoreRangeChange" />
+              </div>
+
+              <!-- 考试批次筛选 -->
+              <div class="flex items-center">
+                <label class="block text-sm font-medium text-gray-700 mr-2">考试批次</label>
+                <CustomDropdown v-model="filters.batch" :options="batchOptions" placeholder="选择考试批次" :multiple="true" filter-type="batch" width="100%" @change="handleBatchChange" />
+              </div>
+
+              <div class="flex justify-end items-center">
+                <el-button type="primary">查询</el-button>
+                <el-button>重置</el-button>
               </div>
             </div>
           </div>
@@ -98,6 +125,17 @@
                 </template>
               </el-table-column>
             </el-table>
+
+            <el-pagination
+              v-model:current-page="currentPage"
+              v-model:page-size="pageSize"
+              :page-sizes="[100, 200, 300, 400]"
+              layout="prev, pager, next, jumper, sizes, total"
+              :total="totalCount"
+              class="flex justify-end mt-5"
+              @size-change="handleSizeChange"
+              @current-change="handleCurrentChange"
+            />
           </div>
         </div>
       </div>
@@ -109,6 +147,10 @@
 import type { CheckboxValueType } from "element-plus";
 import { User, Setting, House, Search, Grid, RefreshRight, Document } from "@element-plus/icons-vue";
 import CustomDropdown from "./CustomDropdown.vue";
+import type { SelectedOptions } from "../type";
+
+import { useMutation } from "@tanstack/vue-query";
+import { studentsInfo } from "../apis/home";
 
 const circleUrl = "https://dev-file.iviewui.com/userinfoPDvn9gKWYihR24SpgC319vXY8qniCqj4/avatar";
 
@@ -129,7 +171,12 @@ interface ColumnConfig {
   visible: boolean;
   sortable: boolean | "custom";
 }
-const currentPage = ref(1);
+
+type Filters = {
+  subjects: string[];
+  scoreRange: string[] | undefined;
+  batch: string[];
+};
 
 const tableData = ref<TableRow[]>([
   { id: 1, name: "张三", studentId: "20250611", subject: "语文", score: 88, examBatch: "第一批" },
@@ -151,6 +198,10 @@ const columns = ref<ColumnConfig[]>([
 const allSelected = ref(false);
 const isIndeterminate = ref(false);
 
+const currentPage = ref(1);
+const pageSize = ref(100);
+const totalCount = ref(466);
+
 const visibleColumns = computed(() => {
   return columns.value.filter((col) => col.visible);
 });
@@ -164,11 +215,10 @@ const updateSelectAllState = () => {
 };
 
 // 筛选条件
-const filters = reactive({
-  subjects: [] as string[],
-  scoreRange: "",
-  examBatch: [] as string[],
-  gradeClass: "",
+const filters = reactive<Filters>({
+  subjects: [],
+  scoreRange: undefined,
+  batch: [],
 });
 
 // 筛选选项配置
@@ -182,6 +232,21 @@ const subjectOptions = [
   { label: "历史", value: "历史", icon: "Clock" },
   { label: "地理", value: "地理", icon: "Location" },
   { label: "政治", value: "政治", icon: "Flag" },
+];
+
+const scoreRangeOptions = [
+  { label: "未及格 (0-59)", value: "0-59" },
+  { label: "及格 (60-69)", value: "60-69" },
+  { label: "良好 (70-79)", value: "70-79" },
+  { label: "优秀 (80-89)", value: "80-89" },
+  { label: "卓越 (90-100)", value: "90-100" },
+];
+
+const batchOptions = [
+  { label: "月考", value: "月考" },
+  { label: "期中考试", value: "期中考试" },
+  { label: "模拟考试", value: "模拟考试" },
+  { label: "期末考试", value: "期末考试" },
 ];
 
 const getColumnWidth = (key: string): string | undefined => {
@@ -234,13 +299,53 @@ const refreshData = () => {
   // }, 1000);
 };
 
-const handleFilterChange = () => {
-  currentPage.value = 1; // 重置到第一页
+// const handleFilterChange = () => {
+//   currentPage.value = 1; // 重置到第一页
+// };
+
+const handleSubjectChange = (value: string[], options: SelectedOptions) => {
+  // console.log("科目筛选变更:", value, options);
+  console.log("科目筛选变更-value:", value);
+  console.log("科目筛选变更-options:", options);
+  currentPage.value = 1;
+};
+
+const handleScoreRangeChange = (value: string, options: SelectedOptions) => {
+  console.log("分数段筛选变更:", value, options);
+  currentPage.value = 1;
+};
+
+const handleBatchChange = (value: string[], options: SelectedOptions) => {
+  console.log("考试批次筛选变更:", value, options);
+  currentPage.value = 1;
+};
+
+const handleSizeChange = (val: number) => {
+  console.log(`${val} items per page`);
+};
+const handleCurrentChange = (val: number) => {
+  console.log(`current page: ${val}`);
+};
+
+const { mutate: updateStudentsInfo } = useMutation({
+  mutationFn: studentsInfo,
+  onSuccess: (res) => {
+    console.log("api--学生数据结果:\n", res);
+    tableData.value = res.data;
+  },
+});
+
+const getStudentsInfo = () => {
+  updateStudentsInfo({
+    currentPage: currentPage.value,
+    pageSize: pageSize.value,
+  });
 };
 
 onMounted(() => {
   console.log("进入home页结果:\n");
   updateSelectAllState();
+  getStudentsInfo();
 });
 </script>
 

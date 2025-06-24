@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
+    "@faker-js/faker": "^9.8.0",
     "@tanstack/vue-query": "^5.56.2",
     "@vueuse/core": "^13.4.0",
     "axios": "^1.7.7",
