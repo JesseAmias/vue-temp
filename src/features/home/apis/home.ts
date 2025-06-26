@@ -23,3 +23,9 @@ interface StudentsInfoResponse extends ErrorType {
 export const studentsInfo = (data: StudentsInfoParam): Promise<StudentsInfoResponse> => {
   return axios.post("/api/stuentsInfo", data);
 };
+
+export const studentsInfoError = (data: StudentsInfoParam): Promise<StudentsInfoResponse> => {
+  return axios.post("/api/stuentsInfoError", data);
+};
+
+//

@@ -3,7 +3,7 @@
     <div class="navbar-wrapper relative flex justify-between items-center h-[50px] py-0 px-[20px] shadow-[0_1px_4px_rgba(0,21,41,.08)] text-lg font-semibold text-[#333]">
       <div class="nav-left">教学管理系统</div>
       <div class="nav-right flex">
-        <el-input v-model="searchVal" class="width-[240px] mr-10" placeholder="搜索">
+        <el-input v-model.trim="searchVal" class="width-[240px] mr-10" placeholder="搜索" @input="handleSearch">
           <template #prefix>
             <el-icon class="el-input__icon"><search /></el-icon>
           </template>
@@ -46,7 +46,6 @@
                   :searchable="true"
                   filter-type="subject"
                   width="100%"
-                  class="w-[140px]"
                   @change="handleSubjectChange"
                 />
               </div>
@@ -64,8 +63,8 @@
               </div>
 
               <div class="flex justify-end items-center">
-                <el-button type="primary">查询</el-button>
-                <el-button>重置</el-button>
+                <el-button type="primary" @click="handleQuery">查询</el-button>
+                <el-button @click="handleRest">重置</el-button>
               </div>
             </div>
           </div>
@@ -106,7 +105,7 @@
             </div>
 
             <!-- 表格 -->
-            <el-table :data="tableData" stripe border style="width: 100%" :header-cell-style="{ backgroundColor: '#f5f7fa' }">
+            <el-table :data="tableData" stripe border v-loading="loadingStudentsInfo" height="480px" max-height="480px" :header-cell-style="{ backgroundColor: '#f5f7fa' }">
               <el-table-column
                 v-for="column in visibleColumns"
                 :key="column.key"
@@ -124,12 +123,19 @@
                   <el-button type="danger" size="small" @click="handleDelete(scope.row)"> 删除 </el-button>
                 </template>
               </el-table-column>
+
+              <template #empty v-if="networkError">
+                <div class="empty-container">
+                  <div>数据加载失败</div>
+                  <el-button type="primary" size="small" @click="handleRetry" :loading="loadingStudentsInfo"> 重新加载 </el-button>
+                </div>
+              </template>
             </el-table>
 
             <el-pagination
               v-model:current-page="currentPage"
               v-model:page-size="pageSize"
-              :page-sizes="[100, 200, 300, 400]"
+              :page-sizes="[10, 100, 200, 300]"
               layout="prev, pager, next, jumper, sizes, total"
               :total="totalCount"
               class="flex justify-end mt-5"
@@ -150,7 +156,8 @@ import CustomDropdown from "./CustomDropdown.vue";
 import type { SelectedOptions } from "../type";
 
 import { useMutation } from "@tanstack/vue-query";
-import { studentsInfo } from "../apis/home";
+import { studentsInfo, studentsInfoError } from "../apis/home";
+import { useDebounceFn } from "@vueuse/core";
 
 const circleUrl = "https://dev-file.iviewui.com/userinfoPDvn9gKWYihR24SpgC319vXY8qniCqj4/avatar";
 
@@ -174,17 +181,13 @@ interface ColumnConfig {
 
 type Filters = {
   subjects: string[];
-  scoreRange: string[] | undefined;
+  scoreRange: string | undefined;
   batch: string[];
 };
 
-const tableData = ref<TableRow[]>([
-  { id: 1, name: "张三", studentId: "20250611", subject: "语文", score: 88, examBatch: "第一批" },
-  { id: 2, name: "李四", studentId: "20250612", subject: "语文", score: 78, examBatch: "第一批" },
-  { id: 3, name: "王五", studentId: "20250613", subject: "数学", score: 99, examBatch: "第一批" },
-  { id: 4, name: "赵六", studentId: "20250614", subject: "数学", score: 98, examBatch: "第二批" },
-  { id: 5, name: "孙七", studentId: "20250618", subject: "数学", score: 88, examBatch: "第二批" },
-]);
+const tableData = ref<TableRow[]>([]);
+// 原始表格数据
+const originTableData = ref<TableRow[]>([]);
 
 const columns = ref<ColumnConfig[]>([
   { key: "id", label: "ID", visible: true, sortable: false },
@@ -199,11 +202,37 @@ const allSelected = ref(false);
 const isIndeterminate = ref(false);
 
 const currentPage = ref(1);
-const pageSize = ref(100);
+const pageSize = ref(10);
 const totalCount = ref(466);
+const networkError = ref(true);
 
 const visibleColumns = computed(() => {
   return columns.value.filter((col) => col.visible);
+});
+
+// 过滤
+const filteredData = computed(() => {
+  return originTableData.value.filter((row) => {
+    // 科目筛选
+    if (filters.subjects.length && !filters.subjects.includes(row.subject)) {
+      return false;
+    }
+
+    // 分数段筛选
+    if (filters.scoreRange) {
+      const [min, max] = filters.scoreRange.split("-").map(Number);
+      if (row.score < min || row.score > max) {
+        return false;
+      }
+    }
+
+    // 批次筛选
+    if (filters.batch.length && !filters.batch.includes(row.examBatch)) {
+      return false;
+    }
+
+    return true;
+  });
 });
 
 const updateSelectAllState = () => {
@@ -214,38 +243,36 @@ const updateSelectAllState = () => {
   isIndeterminate.value = visibleCount > 0 && visibleCount < totalCount;
 };
 
-// 筛选条件
-const filters = reactive<Filters>({
+const initFilters = {
   subjects: [],
   scoreRange: undefined,
   batch: [],
-});
+};
+
+// 筛选条件
+const filters = reactive<Filters>(initFilters);
 
 // 筛选选项配置
 const subjectOptions = [
-  { label: "语文", value: "语文", icon: "Document" },
-  { label: "数学", value: "数学", icon: "Calculator" },
-  { label: "英语", value: "英语", icon: "ChatDotRound" },
-  { label: "物理", value: "物理", icon: "Lightning" },
-  { label: "化学", value: "化学", icon: "TestTube" },
-  { label: "生物", value: "生物", icon: "Cherry" },
-  { label: "历史", value: "历史", icon: "Clock" },
-  { label: "地理", value: "地理", icon: "Location" },
-  { label: "政治", value: "政治", icon: "Flag" },
+  { label: "语文", value: "语文" },
+  { label: "数学", value: "数学" },
+  { label: "英语", value: "英语" },
+  { label: "物理", value: "物理" },
+  { label: "化学", value: "化学" },
+  { label: "生物", value: "生物" },
+  { label: "历史", value: "历史" },
+  { label: "地理", value: "地理" },
+  { label: "政治", value: "政治" },
 ];
 
 const scoreRangeOptions = [
   { label: "未及格 (0-59)", value: "0-59" },
-  { label: "及格 (60-69)", value: "60-69" },
-  { label: "良好 (70-79)", value: "70-79" },
-  { label: "优秀 (80-89)", value: "80-89" },
-  { label: "卓越 (90-100)", value: "90-100" },
+  { label: "良好 (60-79)", value: "60-79" },
+  { label: "优秀 (80-100)", value: "80-100" },
 ];
 
 const batchOptions = [
-  { label: "月考", value: "月考" },
   { label: "期中考试", value: "期中考试" },
-  { label: "模拟考试", value: "模拟考试" },
   { label: "期末考试", value: "期末考试" },
 ];
 
@@ -308,38 +335,76 @@ const handleSubjectChange = (value: string[], options: SelectedOptions) => {
   console.log("科目筛选变更-value:", value);
   console.log("科目筛选变更-options:", options);
   currentPage.value = 1;
+  handleQuery();
 };
 
 const handleScoreRangeChange = (value: string, options: SelectedOptions) => {
-  console.log("分数段筛选变更:", value, options);
+  console.log("分数段筛选变更-value:", value);
+  console.log("分数段筛选变更-options:", options);
   currentPage.value = 1;
+  handleQuery();
 };
 
 const handleBatchChange = (value: string[], options: SelectedOptions) => {
-  console.log("考试批次筛选变更:", value, options);
+  console.log("考试批次筛选变更-value:", value);
+  console.log("考试批次筛选变更-options:", options);
   currentPage.value = 1;
+  handleQuery();
 };
 
 const handleSizeChange = (val: number) => {
-  console.log(`${val} items per page`);
+  pageSize.value = val;
+  getStudentsInfo();
 };
 const handleCurrentChange = (val: number) => {
-  console.log(`current page: ${val}`);
+  currentPage.value = val;
+  getStudentsInfo();
 };
 
-const { mutate: updateStudentsInfo } = useMutation({
-  mutationFn: studentsInfo,
+const { mutate: updateStudentsInfo, isPending: loadingStudentsInfo } = useMutation({
+  // mutationFn: studentsInfo,
+  mutationFn: async (params: { currentPage: number; pageSize: number }) => {
+    return networkError.value ? studentsInfoError(params) : studentsInfo(params);
+  },
   onSuccess: (res) => {
+    networkError.value = false;
     console.log("api--学生数据结果:\n", res);
-    tableData.value = res.data;
+    originTableData.value = res.data;
+    tableData.value = [...res.data];
+  },
+  onError: () => {
+    networkError.value = true;
   },
 });
 
 const getStudentsInfo = () => {
+  console.log("xupdateStudentsInfo结果:\n", updateStudentsInfo);
   updateStudentsInfo({
     currentPage: currentPage.value,
     pageSize: pageSize.value,
   });
+};
+
+const handleQuery = () => {
+  tableData.value = filteredData.value;
+};
+
+const handleRest = () => {
+  filters.subjects = [];
+  filters.scoreRange = undefined;
+  filters.batch = [];
+  handleQuery();
+};
+
+const handleSearch = useDebounceFn(() => {
+  tableData.value = originTableData.value.filter((row) => {
+    return row.name.includes(searchVal.value) || row.studentId.includes(searchVal.value);
+  });
+}, 500);
+
+const handleRetry = () => {
+  networkError.value = false;
+  getStudentsInfo();
 };
 
 onMounted(() => {

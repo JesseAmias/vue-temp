@@ -16,12 +16,12 @@ function getRandomName(): string {
 }
 
 function getRandomSubject() {
-  const subjects = ["语文", "数学", "英语", "物理", "化学"];
+  const subjects = ["语文", "数学", "英语", "物理", "化学", "生物", "历史", "地理", "政治"];
   return subjects[Math.floor(Math.random() * subjects.length)];
 }
 
 function getRandomBatch() {
-  const batches = ["第一批", "第二批", "第三批"];
+  const batches = ["期中考试", "期末考试"];
   return batches[Math.floor(Math.random() * batches.length)];
 }
 
@@ -55,5 +55,21 @@ export default [
         data,
       };
     },
+    timeout: 2000,
+  },
+] as MockMethod[];
+
+export const errorStudentInfo = [
+  {
+    url: "/api/stuentsInfoError",
+    method: "post",
+    statusCode: 500,
+    response: () => {
+      return {
+        code: 500,
+        message: "Internal Server Error",
+      };
+    },
+    timeout: 2000,
   },
 ] as MockMethod[];

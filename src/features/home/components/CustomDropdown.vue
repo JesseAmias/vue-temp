@@ -3,17 +3,32 @@
     <!-- 触发器 -->
     <div
       @click="toggleDropdown"
+      @mouseenter="handleMouseEnter"
+      @mouseleave="handleMouseLeave"
       :class="[
-        'flex items-center justify-between px-3 py-2 border rounded-md cursor-pointer transition-colors',
+        'flex items-center justify-between px-[8px] min-h-[36px] border rounded-md cursor-pointer transition-colors',
         'hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
         isOpen ? 'border-blue-500 ring-2 ring-blue-500' : 'border-gray-300',
         disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white',
       ]"
       :style="{ minWidth: width }"
     >
-      <span :class="['flex-1 text-left', getDisplayTextClass()]"> {{ displayText }} </span>
-      <el-icon :class="['ml-2 transition-transform', isOpen ? 'rotate-180' : '']" :size="16">
-        <ArrowDown />
+      <template v-if="multiple && displayText?.length">
+        <div class="flex flex-wrap justify-start">
+          <div v-for="(label, index) in displayText" :key="index" class="flex items-center p-[2px_8px] bg-[#e8e8e8] m-[3px_4px_3px_0] rounded shrink-0">
+            <span> {{ label }} </span>
+            <el-icon color="rgba(0, 0, 0, .4)" class="ml-[8px]" @click.stop="removeSelectedOption(label)"><Close /></el-icon>
+          </div>
+        </div>
+      </template>
+      <template v-else>
+        <span :class="getDisplayTextClass()"> {{ displayText.length ? displayText : placeholder }} </span>
+      </template>
+
+      <!-- <el-icon :class="['ml-2 transition-transform', isOpen ? 'rotate-180' : '']" :size="16"> -->
+      <el-icon color="rgba(0, 0, 0, .4)" :class="['ml-2 transition-transform']" :size="16">
+        <ArrowDown v-if="!dropdownHover" />
+        <CircleCloseFilled v-else @click.stop="handleClear()" />
       </el-icon>
     </div>
 
@@ -76,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { ArrowDown, Check } from "@element-plus/icons-vue";
+import { ArrowDown, Check, Close, CircleCloseFilled } from "@element-plus/icons-vue";
 import type { DropdownOption } from "../type";
 
 // 定义组件属性
@@ -135,6 +150,7 @@ const emit = defineEmits<{
 const isOpen = ref(false);
 const searchKeyword = ref("");
 const dropdownRef = ref<HTMLElement>();
+const dropdownHover = ref(false);
 
 onMounted(() => {
   document.addEventListener("click", handleClickOutside);
@@ -164,18 +180,17 @@ const filteredOptions = computed(() => {
 
 const displayText = computed(() => {
   if (selectedValues.value.length === 0) {
-    return props.placeholder;
+    return props.multiple ? [] : "";
   }
 
   if (props.multiple) {
-    if (selectedValues.value.length === 1) {
-      const option = props.options.find((opt) => getOptionValue(opt) === selectedValues.value[0]);
-      return option ? getOptionLabel(option) : props.placeholder;
-    }
-    return `已选择 ${selectedValues.value.length} 项`;
+    return selectedValues.value.map((value) => {
+      const option = props.options.find((opt) => getOptionValue(opt) === value);
+      return option ? getOptionLabel(option) : "";
+    });
   } else {
     const option = props.options.find((opt) => getOptionValue(opt) === props.modelValue);
-    return option ? getOptionLabel(option) : props.placeholder;
+    return option ? getOptionLabel(option) : "";
   }
 });
 
@@ -214,7 +229,6 @@ const getOptionKey = (option: DropdownOption): string => {
 };
 
 const getDisplayTextClass = (): string => {
-  console.log("selectedValues.value结果:\n", selectedValues.value);
   return selectedValues.value.length === 0 ? "text-gray-400" : "text-gray-900";
 };
 
@@ -282,6 +296,26 @@ const handleSelectAll = () => {
       props.options.filter((opt) => allValues.includes(getOptionValue(opt))),
     );
   }
+};
+
+const removeSelectedOption = (label: string) => {
+  if (props.multiple) {
+    const newValues = selectedValues.value.filter((val) => val !== label);
+    emit("update:modelValue", newValues);
+    emit(
+      "change",
+      newValues,
+      props.options.filter((opt) => newValues.includes(getOptionValue(opt))),
+    );
+  }
+};
+
+const handleMouseEnter = () => {
+  dropdownHover.value = true;
+};
+
+const handleMouseLeave = () => {
+  dropdownHover.value = false;
 };
 
 const handleClear = () => {
