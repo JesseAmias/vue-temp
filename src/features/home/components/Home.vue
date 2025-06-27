@@ -71,7 +71,7 @@
         </div>
         <div class="table-wrapper">
           <div class="dynamic-table-container p-[20px] round-lg shadow-[0_2px_12px_0_rgba(0,0,0,.1)]">
-            <div class="table-header flex justify-between items-center mb-[20px]">
+            <div class="table-top flex justify-between items-center mb-[20px]">
               <h2 class="font-semibold">考试成绩信息</h2>
 
               <div class="flex items-center">
@@ -105,7 +105,7 @@
             </div>
 
             <!-- 表格 -->
-            <el-table :data="tableData" stripe border v-loading="loadingStudentsInfo" height="480px" max-height="480px" :header-cell-style="{ backgroundColor: '#f5f7fa' }">
+            <!-- <el-table :data="tableData" stripe border v-loading="loadingStudentsInfo" height="480px" max-height="480px" :header-cell-style="{ backgroundColor: '#f5f7fa' }">
               <el-table-column
                 v-for="column in visibleColumns"
                 :key="column.key"
@@ -124,13 +124,21 @@
                 </template>
               </el-table-column>
 
-              <template #empty v-if="networkError">
-                <div class="empty-container">
+              <template #empty>
+                <div class="empty-container" v-if="networkError">
                   <div>数据加载失败</div>
                   <el-button type="primary" size="small" @click="handleRetry" :loading="loadingStudentsInfo"> 重新加载 </el-button>
                 </div>
               </template>
-            </el-table>
+            </el-table> -->
+
+            <div class="table-content h-[400px]">
+              <el-auto-resizer>
+                <template #default="{ height, width }">
+                  <el-table-v2 :columns="visibleColumns" :data="sortedTableData" :width="width" :height="height" :sort-by="sortState" @column-sort="onSort" />
+                </template>
+              </el-auto-resizer>
+            </div>
 
             <el-pagination
               v-model:current-page="currentPage"
@@ -158,6 +166,8 @@ import type { SelectedOptions } from "../type";
 import { useMutation } from "@tanstack/vue-query";
 import { studentsInfo, studentsInfoError } from "../apis/home";
 import { useDebounceFn } from "@vueuse/core";
+import { TableV2SortOrder } from "element-plus";
+import type { SortBy } from "element-plus";
 
 const circleUrl = "https://dev-file.iviewui.com/userinfoPDvn9gKWYihR24SpgC319vXY8qniCqj4/avatar";
 
@@ -174,9 +184,11 @@ interface TableRow {
 
 interface ColumnConfig {
   key: keyof TableRow;
+  dataKey: keyof TableRow;
   label: string;
+  width: number;
   visible: boolean;
-  sortable: boolean | "custom";
+  sortable: boolean;
 }
 
 type Filters = {
@@ -190,24 +202,34 @@ const tableData = ref<TableRow[]>([]);
 const originTableData = ref<TableRow[]>([]);
 
 const columns = ref<ColumnConfig[]>([
-  { key: "id", label: "ID", visible: true, sortable: false },
-  { key: "name", label: "姓名", visible: true, sortable: false },
-  { key: "studentId", label: "学号", visible: true, sortable: false },
-  { key: "subject", label: "科目", visible: true, sortable: false },
-  { key: "score", label: "成绩", visible: true, sortable: true },
-  { key: "examBatch", label: "考试批次", visible: true, sortable: false },
+  { key: "id", label: "ID", dataKey: "id", width: 100, visible: true, sortable: false },
+  { key: "name", label: "姓名", dataKey: "name", width: 200, visible: true, sortable: false },
+  { key: "studentId", label: "学号", dataKey: "studentId", width: 200, visible: true, sortable: false },
+  { key: "subject", label: "科目", dataKey: "subject", width: 200, visible: true, sortable: false },
+  { key: "score", label: "成绩", dataKey: "score", width: 200, visible: true, sortable: true },
+  { key: "examBatch", label: "考试批次", dataKey: "examBatch", width: 200, visible: true, sortable: false },
 ]);
 
 const allSelected = ref(false);
 const isIndeterminate = ref(false);
 
 const currentPage = ref(1);
-const pageSize = ref(10);
+const pageSize = ref(100);
 const totalCount = ref(466);
 const networkError = ref(true);
+const sortState = ref<SortBy>({
+  key: "",
+  order: TableV2SortOrder.ASC,
+});
 
 const visibleColumns = computed(() => {
-  return columns.value.filter((col) => col.visible);
+  return columns.value
+    .filter((col) => col.visible)
+    .map((col) => ({
+      ...col,
+      dataKey: col.key,
+      title: col.label,
+    }));
 });
 
 // 过滤
@@ -232,6 +254,36 @@ const filteredData = computed(() => {
     }
 
     return true;
+  });
+});
+
+// 排序
+const sortedTableData = computed(() => {
+  if (!sortState.value.key || !sortState.value.order) {
+    return tableData.value;
+  }
+  const data = [...tableData.value];
+  const { key, order } = sortState.value;
+
+  return data.sort((itemA: TableRow, itemB: TableRow) => {
+    const valueA = itemA[key as keyof TableRow];
+    const valueB = itemB[key as keyof TableRow];
+
+    // 处理 null/undefined 值
+    if (valueA == null && valueB == null) return 0;
+    if (valueA == null) return 1;
+    if (valueB == null) return -1;
+
+    // 数字类型排序
+    if (typeof valueA === "number" && typeof valueB === "number") {
+      return order === "asc" ? valueA - valueB : valueB - valueA;
+    }
+
+    // 字符串类型排序
+    const strA = String(valueA).toLowerCase();
+    const strB = String(valueB).toLowerCase();
+
+    return order === "asc" ? strA.localeCompare(strB) : strB.localeCompare(strA);
   });
 });
 
@@ -362,10 +414,10 @@ const handleCurrentChange = (val: number) => {
 };
 
 const { mutate: updateStudentsInfo, isPending: loadingStudentsInfo } = useMutation({
-  // mutationFn: studentsInfo,
-  mutationFn: async (params: { currentPage: number; pageSize: number }) => {
-    return networkError.value ? studentsInfoError(params) : studentsInfo(params);
-  },
+  mutationFn: studentsInfo,
+  // mutationFn: async (params: { currentPage: number; pageSize: number }) => {
+  //   return networkError.value ? studentsInfoError(params) : studentsInfo(params);
+  // },
   onSuccess: (res) => {
     networkError.value = false;
     console.log("api--学生数据结果:\n", res);
@@ -378,7 +430,6 @@ const { mutate: updateStudentsInfo, isPending: loadingStudentsInfo } = useMutati
 });
 
 const getStudentsInfo = () => {
-  console.log("xupdateStudentsInfo结果:\n", updateStudentsInfo);
   updateStudentsInfo({
     currentPage: currentPage.value,
     pageSize: pageSize.value,
@@ -407,6 +458,12 @@ const handleRetry = () => {
   getStudentsInfo();
 };
 
+const onSort = (sortBy: SortBy) => {
+  console.log("sortBy结果:\n", sortBy);
+  // data = data.reverse();
+  sortState.value = sortBy;
+};
+
 onMounted(() => {
   console.log("进入home页结果:\n");
   updateSelectAllState();
@@ -417,5 +474,8 @@ onMounted(() => {
 <style lang="scss" scoped>
 .dropdown-icon.rotate {
   transform: rotate(180deg);
+}
+:deep(.el-table-v2__header-cell) {
+  background-color: #f5f7fa;
 }
 </style>
