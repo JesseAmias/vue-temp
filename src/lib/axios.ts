@@ -1,3 +1,4 @@
+import { useTokenStoreHook } from "@/stores/token";
 import Axios, { AxiosError } from "axios";
 export const HTTP_STATUS = {
   SUCCESS: 200,
@@ -32,6 +33,11 @@ export const axios = Axios.create({
 
 // 请求拦截
 axios.interceptors.request.use((config) => {
+  const tokenStore = useTokenStoreHook();
+  if (tokenStore.token) {
+    config.headers.Authorization = `Bearer ${tokenStore.token}`;
+  }
+
   if (config && config.headers) {
     config.headers.Accept = "application/json";
   }
@@ -42,7 +48,12 @@ axios.interceptors.request.use((config) => {
 // 响应拦截
 axios.interceptors.response.use(
   (response) => {
-    return response.data;
+    const res = response.data;
+    if (res.code === 401) {
+      ElMessage.warning("请登录");
+      return Promise.reject(res);
+    }
+    return res;
   },
   (error) => {
     return handleHttpCode(error);

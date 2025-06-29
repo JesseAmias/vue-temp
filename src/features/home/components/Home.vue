@@ -8,25 +8,34 @@
             <el-icon class="el-input__icon"><search /></el-icon>
           </template>
         </el-input>
-        <el-dropdown>
-          <div class="el-dropdown-link flex items-center outline-none">
-            <el-avatar size="small" :src="circleUrl" />
-            <span class="ml-[10px]">Jesse</span>
+
+        <template v-if="isLogin">
+          <el-dropdown class="hover:bg-[#f5f7fa] px-[18px] py-[8px] rounded-md">
+            <div class="el-dropdown-link flex items-center outline-none">
+              <el-avatar size="small" :src="circleUrl" />
+              <span class="ml-[10px]">Jesse</span>
+            </div>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item>
+                  <el-icon><User /></el-icon> 个人中心
+                </el-dropdown-item>
+                <el-dropdown-item>
+                  <el-icon><Setting /></el-icon>设置
+                </el-dropdown-item>
+                <el-dropdown-item divided @click="handleLogout">
+                  <el-icon class="rotate-[-90deg]"><House /></el-icon>退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </template>
+        <template v-else>
+          <div class="flex shrink-0 hover:bg-[#f5f7fa] p-1 rounded-md">
+            <el-text class="cursor-pointer font-normal" @click="handleLogin">未登录</el-text>
           </div>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item>
-                <el-icon><User /></el-icon> 个人中心
-              </el-dropdown-item>
-              <el-dropdown-item>
-                <el-icon><Setting /></el-icon>设置
-              </el-dropdown-item>
-              <el-dropdown-item divided>
-                <el-icon class="rotate-[-90deg]"><House /></el-icon>退出登录
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+          <!-- <el-button type="primary" @click="handleLogin">登录</el-button> -->
+        </template>
       </div>
     </div>
     <div class="main-wrapper">
@@ -162,6 +171,7 @@ import type { CheckboxValueType } from "element-plus";
 import { User, Setting, House, Search, Grid, RefreshRight, Document } from "@element-plus/icons-vue";
 import CustomDropdown from "./CustomDropdown.vue";
 import type { SelectedOptions } from "../type";
+import { useLoginStoreHook } from "@/stores/login";
 
 import { useMutation } from "@tanstack/vue-query";
 import { studentsInfo, studentsInfoError } from "../apis/home";
@@ -197,6 +207,9 @@ type Filters = {
   batch: string[];
 };
 
+const store = useLoginStoreHook();
+const router = useRouter();
+
 const tableData = ref<TableRow[]>([]);
 // 原始表格数据
 const originTableData = ref<TableRow[]>([]);
@@ -221,6 +234,8 @@ const sortState = ref<SortBy>({
   key: "",
   order: TableV2SortOrder.ASC,
 });
+
+const isLogin = computed(() => store.isLogin);
 
 const visibleColumns = computed(() => {
   return columns.value
@@ -285,6 +300,13 @@ const sortedTableData = computed(() => {
 
     return order === "asc" ? strA.localeCompare(strB) : strB.localeCompare(strA);
   });
+});
+
+onMounted(() => {
+  console.log("进入home页结果:\n");
+  console.log("登录状态结果:\n", isLogin.value);
+  updateSelectAllState();
+  getStudentsInfo();
 });
 
 const updateSelectAllState = () => {
@@ -420,7 +442,7 @@ const { mutate: updateStudentsInfo, isPending: loadingStudentsInfo } = useMutati
   // },
   onSuccess: (res) => {
     networkError.value = false;
-    console.log("api--学生数据结果:\n", res);
+
     originTableData.value = res.data;
     tableData.value = [...res.data];
   },
@@ -459,16 +481,20 @@ const handleRetry = () => {
 };
 
 const onSort = (sortBy: SortBy) => {
-  console.log("sortBy结果:\n", sortBy);
-  // data = data.reverse();
   sortState.value = sortBy;
 };
 
-onMounted(() => {
-  console.log("进入home页结果:\n");
-  updateSelectAllState();
-  getStudentsInfo();
-});
+const handleLogin = () => {
+  router.replace({
+    path: "/login",
+  });
+};
+const handleLogout = async () => {
+  store.logout();
+  router.replace({
+    path: "/login",
+  });
+};
 </script>
 
 <style lang="scss" scoped>

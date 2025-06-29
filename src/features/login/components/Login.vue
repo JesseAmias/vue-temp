@@ -47,65 +47,73 @@
 <script setup lang="ts">
 import { useLogin } from "@/features/login/apis";
 import { useLoginStoreHook } from "@/stores/login";
-import CryptoJS from "crypto-js";
+import { useUserStoreHook } from "@/stores/user";
+import { useTokenStoreHook } from "@/stores/token";
 import type { FormInstance, FormRules } from "element-plus";
 import { View, Hide } from "@element-plus/icons-vue";
 import { useDebounceFn } from "@vueuse/core";
 
-interface RuleForm {
+type UserInfo = {
   username: string;
   password: string;
-}
+};
 
 const router = useRouter();
-const store = useLoginStoreHook();
+const loginStore = useLoginStoreHook();
+const userStore = useUserStoreHook();
+const tokenStore = useTokenStoreHook();
 
 const rememberMe = ref(false);
 
 const ruleFormRef = ref<FormInstance>();
-const formData = reactive<RuleForm>({
+const formData = reactive<UserInfo>({
   username: "",
   password: "",
 });
 
 const passwordView = ref(false);
 
-const rules = reactive<FormRules<RuleForm>>({
+const passwordValidator = (rule: any, value: any, callback: (error?: string) => void) => {
+  if (formData.username === "test") {
+    callback(); // 校验通过
+  } else {
+    const pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{8,20}$/;
+    if (!value) {
+      callback("请输入密码");
+    } else if (!pattern.test(value)) {
+      callback("格式错误，8-20位，需同时包含大小写字母、数字、特殊字符");
+    } else {
+      callback();
+    }
+  }
+};
+
+const rules = reactive<FormRules<UserInfo>>({
   username: [
     { required: true, message: "请输入用户名", trigger: "blur" },
     { min: 4, max: 20, message: "用户名长度为 4-20 个字符", trigger: "blur" },
   ],
   password: [
     { required: true, message: "请输入密码", trigger: "blur" },
-    {
-      pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{8,20}$/,
-      message: "格式错误，8-20位，需同时包含大小写字母、数字、特殊字符",
-      trigger: "blur",
-    },
+    { validator: passwordValidator, trigger: "blur" },
   ],
 });
 
 onMounted(() => {
-  const usernameStore = localStorage.getItem("username");
-  const passwordStore = localStorage.getItem("password");
-  if (usernameStore && passwordStore) {
-    const decrypted = decryptUserData(usernameStore, passwordStore);
-    formData.username = decrypted.decryptedUsername;
-    formData.password = decrypted.decryptedPassword;
-    rememberMe.value = true;
-  }
+  initForm();
 });
 
-const encryptUserData = (username: string, password: string) => {
-  const encryptedUsername = CryptoJS.AES.encrypt(username, "secretKey").toString();
-  const encryptedPassword = CryptoJS.AES.encrypt(password, "secretKey").toString();
-  return { encryptedUsername, encryptedPassword };
-};
-
-const decryptUserData = (encryptedUsername: string, encryptedPassword: string) => {
-  const decryptedUsername = CryptoJS.AES.decrypt(encryptedUsername, "secretKey").toString(CryptoJS.enc.Utf8);
-  const decryptedPassword = CryptoJS.AES.decrypt(encryptedPassword, "secretKey").toString(CryptoJS.enc.Utf8);
-  return { decryptedUsername, decryptedPassword };
+const initForm = async () => {
+  userStore.getUserInfo();
+  const rememberMeStore = loginStore.rememberMe;
+  if (rememberMeStore) {
+    const { username, password } = userStore.userInfo;
+    if (username && password) {
+      formData.username = username;
+      formData.password = password;
+      rememberMe.value = true;
+    }
+  }
 };
 
 const { mutate: loginMutate } = useLogin({
@@ -116,17 +124,12 @@ const { mutate: loginMutate } = useLogin({
           message: "登录成功",
           type: "success",
         });
-        store.patchLogin(true);
-        if (rememberMe.value) {
-          const encrypted = encryptUserData(formData.username, formData.password);
-          localStorage.setItem("username", encrypted.encryptedUsername);
-          localStorage.setItem("password", encrypted.encryptedPassword);
-        } else {
-          localStorage.removeItem("username");
-          localStorage.removeItem("password");
-        }
+        loginStore.patchLogin(true, rememberMe.value);
+        tokenStore.setToken(data.data.token);
+        userStore.setUserInfo(formData.username, formData.password);
+
         router.replace({
-          path: "/admin",
+          path: "/home",
         });
       } else {
         ElMessage({

@@ -6,8 +6,8 @@ export default [
       const { userName, userPwd } = body;
 
       const users = [
-        { userName: "admin", userPwd: "123" },
-        { userName: "test", userPwd: "Aa!123456" },
+        { userName: "admin", userPwd: "Aa!123456" },
+        { userName: "test", userPwd: "123" },
       ];
 
       const user = users.find((user) => user.userName === userName);
@@ -24,6 +24,17 @@ export default [
           token: "mock-token-123",
           userName,
         },
+      };
+    },
+  },
+  {
+    // 登出
+    url: "/api/logout",
+    method: "post",
+    response: () => {
+      return {
+        code: 0,
+        message: "登出成功",
       };
     },
   },

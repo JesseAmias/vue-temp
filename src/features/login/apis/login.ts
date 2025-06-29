@@ -11,8 +11,8 @@ type loginParam = {
 };
 interface LoginResponse extends ErrorType {
   message: string;
-  data?: {
-    loginSuc: boolean;
+  data: {
+    token: string;
   };
 }
 export const postLogin = (data: loginParam): Promise<LoginResponse> => {
