@@ -3,9 +3,20 @@ import type { RouteRecordRaw } from "vue-router";
 import { loginRoutes } from "@/features/login";
 import { adminRoutes } from "@/features/admin";
 import { homeRoutes } from "@/features/home";
+import { useLoginStoreHook } from "@/stores/login";
+
+const loginStore = useLoginStoreHook();
 
 // 合并所有路由
-const routes: RouteRecordRaw[] = [...loginRoutes, ...adminRoutes, ...homeRoutes];
+const routes: RouteRecordRaw[] = [
+  {
+    path: "/",
+    redirect: "/home",
+  },
+  ...loginRoutes,
+  ...adminRoutes,
+  ...homeRoutes,
+];
 
 // 创建路由实例
 const router = createRouter({
@@ -26,6 +37,15 @@ const router = createRouter({
       behavior: "smooth",
     };
   },
+});
+
+// 导航守卫，判断是否登录
+router.beforeEach((to, from, next) => {
+  if (to.path !== "/login" && !loginStore.isLogin) {
+    next({ path: "/login" });
+  } else {
+    next();
+  }
 });
 
 export default router;

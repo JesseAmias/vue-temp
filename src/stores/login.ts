@@ -21,6 +21,7 @@ export const useLoginStore = defineStore({
       const tokenStore = useTokenStoreHook();
 
       this.isLogin = false;
+      sessionStorage.removeItem("isLogin");
       userStore.clearUserInfo();
       tokenStore.clearToken();
     },

@@ -34,6 +34,7 @@ export const axios = Axios.create({
 // 请求拦截
 axios.interceptors.request.use((config) => {
   const tokenStore = useTokenStoreHook();
+
   if (tokenStore.token) {
     config.headers.Authorization = `Bearer ${tokenStore.token}`;
   }

@@ -1,44 +1,65 @@
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-indigo-100 px-4 py-12 sm:px-6 lg:px-8">
-    <div class="w-full max-w-md">
-      <div class="bg-white shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
-        <div class="text-center mb-8">
-          <img class="mx-auto h-12 w-auto" src="https://tailwindui.com/plus/img/logos/mark.svg?color=indigo&shade=600" alt="您的公司" />
-          <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">欢迎登录管理系统</h2>
+  <div class="flex grid grid-cols-1 md:grid-cols-2 gap-4 min-h-screen items-center justify-center bg-indigo-100 px-20 py-12 sm:px-6 lg:px-60" :style="bgStyle">
+    <div class="login-left flex items-center justify-center relative px-10">
+      <div class="text-center text-white z-10 relative max-w-md">
+        <div class="mb-8">
+          <div class="w-24 h-24 mx-auto mb-4 bg-white bg-opacity-20 rounded-full flex items-center justify-center logo-glow">
+            <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
+          </div>
+          <h1 class="text-3xl font-bold mb-2">欢迎登录教学管理系统</h1>
+          <p class="text-xl opacity-90">Teaching management system</p>
+          <p class="description mt-10 text-white/80">请使用您的账户信息登录系统</p>
         </div>
 
-        <el-form ref="ruleFormRef" size="large" label-position="top" :model="formData" :rules="rules" label-width="auto">
-          <el-form-item label="用户名" prop="username">
-            <el-input v-model="formData.username" />
-          </el-form-item>
-          <el-form-item label="密码" prop="password">
-            <!-- <el-input v-model="formData.password" type="password" /> -->
-            <el-input v-model="formData.password" :type="passwordView ? 'text' : 'password'" placeholder="请输入密码">
-              <template #suffix>
-                <span @click="passwordView = !passwordView" class="cursor-pointer">
-                  <el-icon v-if="passwordView" :size="16"><View /></el-icon>
-                  <el-icon v-else :size="16"><Hide /></el-icon>
-                </span>
-              </template>
-            </el-input>
-          </el-form-item>
+        <div class="space-y-4 text-center">
+          <p class="text-lg opacity-90">数字化管理</p>
+          <p class="text-lg opacity-90">提升教学效率</p>
+          <p class="text-lg opacity-90">智能化的课程安排</p>
+        </div>
+      </div>
+    </div>
 
-          <el-form-item>
-            <div class="flex flex-1 items-center justify-between">
-              <div class="flex items-center">
-                <input id="remember-me" name="remember-me" type="checkbox" v-model="rememberMe" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" />
-                <label for="remember-me" class="ml-2 block text-sm text-gray-900"> 记住我 </label>
-              </div>
+    <div class="flex justify-center">
+      <div class="w-full max-w-md">
+        <div class="bg-white shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
+          <div class="text-center mb-8">
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">登录</h2>
+          </div>
 
-              <div class="text-sm">
-                <a href="javascript:(0)" @click="forgotPassword" class="font-medium text-indigo-600 hover:text-indigo-500"> 忘记密码？ </a>
+          <el-form ref="ruleFormRef" size="large" label-position="top" :model="formData" :rules="rules" label-width="auto">
+            <el-form-item label="用户名" prop="username">
+              <el-input v-model="formData.username" />
+            </el-form-item>
+            <el-form-item label="密码" prop="password">
+              <el-input v-model="formData.password" :type="passwordView ? 'text' : 'password'" placeholder="请输入密码">
+                <template #suffix>
+                  <span @click="passwordView = !passwordView" class="cursor-pointer">
+                    <el-icon v-if="passwordView" :size="16"><View /></el-icon>
+                    <el-icon v-else :size="16"><Hide /></el-icon>
+                  </span>
+                </template>
+              </el-input>
+            </el-form-item>
+
+            <el-form-item>
+              <div class="flex flex-1 items-center justify-between">
+                <div class="flex items-center">
+                  <input id="remember-me" name="remember-me" type="checkbox" v-model="rememberMe" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" />
+                  <label for="remember-me" class="ml-2 block text-sm text-gray-900"> 记住我 </label>
+                </div>
+
+                <div class="text-sm">
+                  <a href="javascript:(0)" @click="forgotPassword" class="font-medium text-indigo-600 hover:text-indigo-500"> 忘记密码？ </a>
+                </div>
               </div>
-            </div>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="() => debounceLogin(ruleFormRef)" style="width: 100%">登录</el-button>
-          </el-form-item>
-        </el-form>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="() => debounceLogin(ruleFormRef)" style="width: 100%">登录</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
       </div>
     </div>
   </div>
@@ -52,6 +73,7 @@ import { useTokenStoreHook } from "@/stores/token";
 import type { FormInstance, FormRules } from "element-plus";
 import { View, Hide } from "@element-plus/icons-vue";
 import { useDebounceFn } from "@vueuse/core";
+import bgImage from "@/assets/imgs/login-bg.jpg";
 
 type UserInfo = {
   username: string;
@@ -72,6 +94,13 @@ const formData = reactive<UserInfo>({
 });
 
 const passwordView = ref(false);
+// 引入一张assets/imgs里面的图
+
+const bgStyle = {
+  backgroundImage: `url(${bgImage})`,
+  backgroundSize: "cover",
+  backgroundRepeat: "no-repeat",
+};
 
 const passwordValidator = (rule: any, value: any, callback: (error?: string) => void) => {
   if (formData.username === "test") {
@@ -118,7 +147,7 @@ const initForm = async () => {
 
 const { mutate: loginMutate } = useLogin({
   config: {
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       if (!data.code) {
         ElMessage({
           message: "登录成功",
@@ -128,9 +157,16 @@ const { mutate: loginMutate } = useLogin({
         tokenStore.setToken(data.data.token);
         userStore.setUserInfo(formData.username, formData.password);
 
-        router.replace({
-          path: "/home",
-        });
+        // 等待响应式刷新
+        await nextTick();
+
+        // 稍作延迟，确保拦截器能获取最新 token
+        setTimeout(() => {
+          router.replace({ path: "/home" });
+        }, 0);
+        // router.replace({
+        //   path: "/home",
+        // });
       } else {
         ElMessage({
           message: data.message,
@@ -156,7 +192,6 @@ const handleLogin = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
   await formEl.validate((valid, fields) => {
     if (valid) {
-      console.log("submit!");
       loginMutate({ userName: formData.username, userPwd: formData.password });
     } else {
       console.log("error submit!", fields);
@@ -172,6 +207,4 @@ const forgotPassword = () => {
 };
 </script>
 
-<style scoped lang="scss">
-/* 如有需要，请添加其他样式 */
-</style>
+<style scoped lang="scss"></style>

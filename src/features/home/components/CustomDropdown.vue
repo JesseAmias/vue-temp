@@ -25,7 +25,7 @@
       </template>
 
       <!-- <el-icon :class="['ml-2 transition-transform', isOpen ? 'rotate-180' : '']" :size="16"> -->
-      <el-icon color="rgba(0, 0, 0, .4)" :class="['ml-2 transition-transform']" :size="16">
+      <el-icon color="rgba(0, 0, 0, .4)" :class="['ml-2 transition-transform', themeConfig.clearIconText]" :size="16">
         <ArrowDown v-if="!dropdownHover" />
         <CircleCloseFilled v-else @click.stop="handleClear()" />
       </el-icon>
@@ -219,6 +219,7 @@ const themeConfig = computed(() => {
       inputText: "bg-[#e8e8e8]",
       inputSpan: "",
       closeIconText: "text-black/40 hover:text-black/80",
+      clearIconText: "",
       option: "text-gray-700 hover:bg-blue-50",
       optionSelected: "bg-blue-100 text-blue-700",
       search: "border-gray-300 focus:ring-blue-500",
@@ -233,6 +234,7 @@ const themeConfig = computed(() => {
       inputText: "bg-[#393939]",
       inputSpan: "text-white/80",
       closeIconText: "text-white/35 hover:text-white/80",
+      clearIconText: "text-white/60 hover:text-white/80",
       option: "text-gray-200 hover:bg-gray-700",
       optionSelected: "bg-blue-900 text-blue-200",
       search: "bg-gray-700 border-gray-600 text-gray-100 focus:ring-blue-400",

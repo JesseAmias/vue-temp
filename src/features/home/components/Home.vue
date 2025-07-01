@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="navbar-wrapper relative flex justify-between items-center h-[50px] py-0 px-[20px] shadow-[0_1px_4px_rgba(0,21,41,.08)] text-lg font-semibold text-[#333]">
-      <div class="nav-left">教学管理系统</div>
+      <div class="nav-left hidden sm:block">教学管理系统</div>
       <div class="nav-right flex">
         <el-input v-model.trim="searchVal" class="width-[240px] mr-10" placeholder="搜索" @input="handleSearch">
           <template #prefix>
@@ -22,6 +22,9 @@
                 </el-dropdown-item>
                 <el-dropdown-item>
                   <el-icon><Setting /></el-icon>设置
+                </el-dropdown-item>
+                <el-dropdown-item @click="changeTheme">
+                  <el-icon><Moon /></el-icon>主题切换
                 </el-dropdown-item>
                 <el-dropdown-item divided @click="handleLogout">
                   <el-icon class="rotate-[-90deg]"><House /></el-icon>退出登录
@@ -46,7 +49,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <!-- 科目筛选 -->
               <div class="flex items-center">
-                <label class="block text-sm font-medium text-gray-700 mr-2">科目</label>
+                <div class="block text-sm font-medium text-gray-700 mr-2 shrink-0">科目</div>
                 <CustomDropdown
                   v-model="filters.subjects"
                   :options="subjectOptions"
@@ -55,20 +58,38 @@
                   :searchable="true"
                   filter-type="subject"
                   width="100%"
+                  :theme="currentTheme"
                   @change="handleSubjectChange"
                 />
               </div>
 
               <!-- 分数段筛选 -->
               <div class="flex items-center">
-                <label class="block text-sm font-medium text-gray-700 mr-2">分数段</label>
-                <CustomDropdown v-model="filters.scoreRange" :options="scoreRangeOptions" placeholder="选择分数段" filter-type="score" width="100%" @change="handleScoreRangeChange" />
+                <div class="block text-sm font-medium text-gray-700 mr-2 shrink-0">分数段</div>
+                <CustomDropdown
+                  v-model="filters.scoreRange"
+                  :options="scoreRangeOptions"
+                  placeholder="选择分数段"
+                  filter-type="score"
+                  width="100%"
+                  :theme="currentTheme"
+                  @change="handleScoreRangeChange"
+                />
               </div>
 
               <!-- 考试批次筛选 -->
               <div class="flex items-center">
-                <label class="block text-sm font-medium text-gray-700 mr-2">考试批次</label>
-                <CustomDropdown v-model="filters.batch" :options="batchOptions" placeholder="选择考试批次" :multiple="true" filter-type="batch" width="100%" @change="handleBatchChange" />
+                <div class="block text-sm font-medium text-gray-700 mr-2 shrink-0">考试批次</div>
+                <CustomDropdown
+                  v-model="filters.batch"
+                  :options="batchOptions"
+                  placeholder="选择考试批次"
+                  :multiple="true"
+                  filter-type="batch"
+                  width="100%"
+                  :theme="currentTheme"
+                  @change="handleBatchChange"
+                />
               </div>
 
               <div class="flex justify-end items-center">
@@ -84,11 +105,23 @@
               <h2 class="font-semibold">考试成绩信息</h2>
 
               <div class="flex items-center">
-                <el-tooltip content="导出数据" placement="top">
-                  <el-icon @click="exportData" class="cursor-pointer mr-[15px]"><Document /></el-icon>
+                <el-tooltip content="切换表格模式" placement="top">
+                  <!-- <el-icon @click="refreshData" class="cursor-pointer mr-[15px]"><RefreshRight /></el-icon> -->
+                  <el-icon class="cursor-pointer mr-[15px]" @click="changeTable"><Guide /></el-icon>
                 </el-tooltip>
-                <el-tooltip content="刷新" placement="top">
-                  <el-icon @click="refreshData" class="cursor-pointer mr-[15px]"><RefreshRight /></el-icon>
+                <el-tooltip content="导出数据" placement="top">
+                  <el-dropdown trigger="click" placement="bottom-end">
+                    <el-icon class="cursor-pointer mr-[15px]"><Document /></el-icon>
+                    <!-- @click="exportData"  -->
+                    <template #dropdown>
+                      <el-dropdown-menu class="column-dropdown min-w-[100px]">
+                        <div class="py-[4px]">
+                          <div class="py-[5px] px-[16px] cursor-pointer hover:bg-blue-100" @click="handleExportData(ExportType.XLSX)">导出为 xls</div>
+                          <div class="py-[5px] px-[16px] cursor-pointer hover:bg-blue-100" @click="handleExportData(ExportType.CSV)">导出为 csv</div>
+                        </div>
+                      </el-dropdown-menu>
+                    </template>
+                  </el-dropdown>
                 </el-tooltip>
                 <el-tooltip content="列设置" placement="top">
                   <el-dropdown trigger="click" placement="bottom-end">
@@ -114,40 +147,50 @@
             </div>
 
             <!-- 表格 -->
-            <!-- <el-table :data="tableData" stripe border v-loading="loadingStudentsInfo" height="480px" max-height="480px" :header-cell-style="{ backgroundColor: '#f5f7fa' }">
-              <el-table-column
-                v-for="column in visibleColumns"
-                :key="column.key"
-                :prop="column.key"
-                :label="column.label"
-                :width="getColumnWidth(column.key)"
-                :sortable="column.sortable"
-                show-overflow-tooltip
-              >
-              </el-table-column>
+            <template v-if="!tableV2Enabled">
+              <el-table :data="tableData" stripe border v-loading="loadingStudentsInfo" height="480px" max-height="480px" :header-cell-style="{ backgroundColor: '#f5f7fa' }">
+                <el-table-column
+                  v-for="column in visibleColumns"
+                  :key="column.key"
+                  :prop="column.key"
+                  :label="column.label"
+                  :width="getColumnWidth(column.key)"
+                  :sortable="column.sortable"
+                  show-overflow-tooltip
+                >
+                </el-table-column>
 
-              <el-table-column label="操作" width="140" fixed="right">
-                <template #default="scope">
-                  <el-button type="primary" size="small" @click="handleEdit(scope.row)"> 编辑 </el-button>
-                  <el-button type="danger" size="small" @click="handleDelete(scope.row)"> 删除 </el-button>
+                <el-table-column label="操作" width="140" fixed="right">
+                  <template #default="scope">
+                    <el-button type="primary" size="small" @click="handleEdit(scope.row)"> 编辑 </el-button>
+                    <el-button type="danger" size="small" @click="handleDelete(scope.row)"> 删除 </el-button>
+                  </template>
+                </el-table-column>
+
+                <template #empty>
+                  <div class="empty-container" v-if="networkError">
+                    <div>数据加载失败</div>
+                    <el-button type="primary" size="small" @click="handleRetry" :loading="loadingStudentsInfo"> 重新加载 </el-button>
+                  </div>
                 </template>
-              </el-table-column>
-
-              <template #empty>
-                <div class="empty-container" v-if="networkError">
-                  <div>数据加载失败</div>
-                  <el-button type="primary" size="small" @click="handleRetry" :loading="loadingStudentsInfo"> 重新加载 </el-button>
-                </div>
-              </template>
-            </el-table> -->
-
-            <div class="table-content h-[400px]">
-              <el-auto-resizer>
-                <template #default="{ height, width }">
-                  <el-table-v2 :columns="visibleColumns" :data="sortedTableData" :width="width" :height="height" :sort-by="sortState" @column-sort="onSort" />
-                </template>
-              </el-auto-resizer>
-            </div>
+              </el-table>
+            </template>
+            <template v-else>
+              <div class="table-content h-[400px]">
+                <el-auto-resizer>
+                  <template #default="{ height, width }">
+                    <el-table-v2 :columns="visibleColumns" :data="sortedTableData" v-loading="loadingStudentsInfo" :width="width" :height="height" :sort-by="sortState" @column-sort="onSort">
+                      <template #empty>
+                        <div class="empty-container h-full flex flex-col justify-center items-center" v-if="networkError">
+                          <div class="mb-[10px] text-gray-400">数据加载失败</div>
+                          <el-button type="primary" size="small" @click="handleRetry" :loading="loadingStudentsInfo"> 重新加载 </el-button>
+                        </div>
+                      </template>
+                    </el-table-v2>
+                  </template>
+                </el-auto-resizer>
+              </div>
+            </template>
 
             <el-pagination
               v-model:current-page="currentPage"
@@ -168,16 +211,18 @@
 
 <script setup lang="ts">
 import type { CheckboxValueType } from "element-plus";
-import { User, Setting, House, Search, Grid, RefreshRight, Document } from "@element-plus/icons-vue";
+import { User, Setting, House, Search, Grid, Guide, Document, Moon } from "@element-plus/icons-vue";
 import CustomDropdown from "./CustomDropdown.vue";
 import type { SelectedOptions } from "../type";
 import { useLoginStoreHook } from "@/stores/login";
+import { useStudentsFilterStore } from "@/stores/filter";
 
 import { useMutation } from "@tanstack/vue-query";
 import { studentsInfo, studentsInfoError } from "../apis/home";
 import { useDebounceFn } from "@vueuse/core";
 import { TableV2SortOrder } from "element-plus";
 import type { SortBy } from "element-plus";
+import { useFileExport } from "@/utils/tableExport";
 
 const circleUrl = "https://dev-file.iviewui.com/userinfoPDvn9gKWYihR24SpgC319vXY8qniCqj4/avatar";
 
@@ -201,14 +246,15 @@ interface ColumnConfig {
   sortable: boolean;
 }
 
-type Filters = {
-  subjects: string[];
-  scoreRange: string | undefined;
-  batch: string[];
-};
+enum ExportType {
+  XLSX = "xlsx",
+  CSV = "csv",
+}
 
-const store = useLoginStoreHook();
+const loginStore = useLoginStoreHook();
+const filterStore = useStudentsFilterStore();
 const router = useRouter();
+const { exportData } = useFileExport();
 
 const tableData = ref<TableRow[]>([]);
 // 原始表格数据
@@ -234,8 +280,13 @@ const sortState = ref<SortBy>({
   key: "",
   order: TableV2SortOrder.ASC,
 });
+const tableV2Enabled = ref(false);
 
-const isLogin = computed(() => store.isLogin);
+const currentTheme = ref<"light" | "dark">("light");
+
+const { filters } = storeToRefs(filterStore);
+
+const isLogin = computed(() => loginStore.isLogin);
 
 const visibleColumns = computed(() => {
   return columns.value
@@ -251,20 +302,20 @@ const visibleColumns = computed(() => {
 const filteredData = computed(() => {
   return originTableData.value.filter((row) => {
     // 科目筛选
-    if (filters.subjects.length && !filters.subjects.includes(row.subject)) {
+    if (filters.value.subjects.length && !filters.value.subjects.includes(row.subject)) {
       return false;
     }
 
     // 分数段筛选
-    if (filters.scoreRange) {
-      const [min, max] = filters.scoreRange.split("-").map(Number);
+    if (filters.value.scoreRange) {
+      const [min, max] = filters.value.scoreRange.split("-").map(Number);
       if (row.score < min || row.score > max) {
         return false;
       }
     }
 
     // 批次筛选
-    if (filters.batch.length && !filters.batch.includes(row.examBatch)) {
+    if (filters.value.batch.length && !filters.value.batch.includes(row.examBatch)) {
       return false;
     }
 
@@ -303,8 +354,6 @@ const sortedTableData = computed(() => {
 });
 
 onMounted(() => {
-  console.log("进入home页结果:\n");
-  console.log("登录状态结果:\n", isLogin.value);
   updateSelectAllState();
   getStudentsInfo();
 });
@@ -316,15 +365,6 @@ const updateSelectAllState = () => {
   allSelected.value = visibleCount === totalCount;
   isIndeterminate.value = visibleCount > 0 && visibleCount < totalCount;
 };
-
-const initFilters = {
-  subjects: [],
-  scoreRange: undefined,
-  batch: [],
-};
-
-// 筛选条件
-const filters = reactive<Filters>(initFilters);
 
 // 筛选选项配置
 const subjectOptions = [
@@ -386,42 +426,21 @@ const handleDelete = (row: TableRow) => {
   ElMessage.info(`删除用户: ${row.name}`);
 };
 
-const exportData = () => {
-  ElMessage.success("导出功能待实现");
+const changeTable = () => {
+  tableV2Enabled.value = !tableV2Enabled.value;
 };
-
-const refreshData = () => {
-  ElMessage.success("数据刷新成功");
-  // loading.value = true;
-  // setTimeout(() => {
-  //   originalData.value = generateMockData();
-  //   loading.value = false;
-  //   ElMessage.success("数据刷新成功");
-  // }, 1000);
-};
-
-// const handleFilterChange = () => {
-//   currentPage.value = 1; // 重置到第一页
-// };
 
 const handleSubjectChange = (value: string[], options: SelectedOptions) => {
-  // console.log("科目筛选变更:", value, options);
-  console.log("科目筛选变更-value:", value);
-  console.log("科目筛选变更-options:", options);
   currentPage.value = 1;
   handleQuery();
 };
 
 const handleScoreRangeChange = (value: string, options: SelectedOptions) => {
-  console.log("分数段筛选变更-value:", value);
-  console.log("分数段筛选变更-options:", options);
   currentPage.value = 1;
   handleQuery();
 };
 
 const handleBatchChange = (value: string[], options: SelectedOptions) => {
-  console.log("考试批次筛选变更-value:", value);
-  console.log("考试批次筛选变更-options:", options);
   currentPage.value = 1;
   handleQuery();
 };
@@ -436,15 +455,16 @@ const handleCurrentChange = (val: number) => {
 };
 
 const { mutate: updateStudentsInfo, isPending: loadingStudentsInfo } = useMutation({
-  mutationFn: studentsInfo,
-  // mutationFn: async (params: { currentPage: number; pageSize: number }) => {
-  //   return networkError.value ? studentsInfoError(params) : studentsInfo(params);
-  // },
+  // mutationFn: studentsInfo,
+  mutationFn: async (params: { currentPage: number; pageSize: number }) => {
+    return networkError.value ? studentsInfoError(params) : studentsInfo(params);
+  },
   onSuccess: (res) => {
     networkError.value = false;
 
     originTableData.value = res.data;
     tableData.value = [...res.data];
+    handleQuery();
   },
   onError: () => {
     networkError.value = true;
@@ -463,9 +483,7 @@ const handleQuery = () => {
 };
 
 const handleRest = () => {
-  filters.subjects = [];
-  filters.scoreRange = undefined;
-  filters.batch = [];
+  filters.value = { subjects: [], scoreRange: undefined, batch: [] };
   handleQuery();
 };
 
@@ -489,11 +507,31 @@ const handleLogin = () => {
     path: "/login",
   });
 };
+
+const changeTheme = () => {
+  currentTheme.value = currentTheme.value === "light" ? "dark" : "light";
+};
 const handleLogout = async () => {
-  store.logout();
+  loginStore.logout();
   router.replace({
     path: "/login",
   });
+};
+
+const handleExportData = (formmat: "xlsx" | "csv") => {
+  const headers: Record<keyof TableRow, string> = visibleColumns.value.reduce(
+    (acc, cur) => {
+      acc[cur.key] = cur.label;
+      return acc;
+    },
+    {} as Record<keyof TableRow, string>,
+  );
+  const result = exportData(tableData.value, formmat, { headers });
+  if (result.success) {
+    ElMessage.success(result.message);
+  } else {
+    ElMessage.error(result.message);
+  }
 };
 </script>
 
@@ -503,5 +541,8 @@ const handleLogout = async () => {
 }
 :deep(.el-table-v2__header-cell) {
   background-color: #f5f7fa;
+}
+:deep(.el-table-v2__empty) {
+  height: 100%;
 }
 </style>
