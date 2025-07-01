@@ -1,6 +1,5 @@
 <template>
   <div class="relative inline-block" ref="dropdownRef">
-    <!-- 触发器 -->
     <div
       @click="toggleDropdown"
       @mouseenter="handleMouseEnter"
@@ -9,20 +8,20 @@
         'flex items-center justify-between px-[8px] min-h-[36px] border rounded-md cursor-pointer transition-colors',
         'hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
         isOpen ? 'border-blue-500 ring-2 ring-blue-500' : 'border-gray-300',
-        disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white',
+        disabled ? themeConfig.triggerDisabled + ' cursor-not-allowed' : themeConfig.trigger,
       ]"
       :style="{ minWidth: width }"
     >
       <template v-if="multiple && displayText?.length">
         <div class="flex flex-wrap justify-start">
-          <div v-for="(label, index) in displayText" :key="index" class="flex items-center p-[2px_8px] bg-[#e8e8e8] m-[3px_4px_3px_0] rounded shrink-0">
-            <span> {{ label }} </span>
-            <el-icon color="rgba(0, 0, 0, .4)" class="ml-[8px]" @click.stop="removeSelectedOption(label)"><Close /></el-icon>
+          <div v-for="(label, index) in displayText" :key="index" :class="['flex items-center p-[2px_8px]  m-[3px_4px_3px_0] rounded shrink-0', themeConfig.inputText]">
+            <span :class="[themeConfig.inputSpan]"> {{ label }} </span>
+            <el-icon :class="['ml-[8px]', themeConfig.closeIconText]" @click.stop="removeSelectedOption(label)"><Close /></el-icon>
           </div>
         </div>
       </template>
       <template v-else>
-        <span :class="getDisplayTextClass()"> {{ displayText.length ? displayText : placeholder }} </span>
+        <span :class="[themeConfig.inputSpan, getDisplayTextClass()]"> {{ displayText.length ? displayText : placeholder }} </span>
       </template>
 
       <!-- <el-icon :class="['ml-2 transition-transform', isOpen ? 'rotate-180' : '']" :size="16"> -->
@@ -41,26 +40,26 @@
       leave-from-class="opacity-100 translate-y-0"
       leave-to-class="opacity-0 translate-y-1"
     >
-      <div v-show="isOpen" :class="['absolute z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg', 'max-h-60 overflow-auto']" :style="{ minWidth: width }">
+      <div v-show="isOpen" :class="['absolute z-50 mt-1 border rounded-md shadow-lg', 'max-h-60 overflow-auto', themeConfig.dropdown]" :style="{ minWidth: width }">
         <!-- 搜索框 (可选) -->
-        <div v-if="searchable" class="p-2 border-b border-gray-100">
+        <div v-if="searchable" :class="['p-2 border-b', themeConfig.selectAll]">
           <input
             v-model="searchKeyword"
             type="text"
             :placeholder="searchPlaceholder"
-            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+            :class="['w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1', themeConfig.search]"
             @click.stop
           />
         </div>
 
         <!-- 全选选项 (多选模式下) -->
-        <div v-if="multiple && showSelectAll" @click="handleSelectAll" class="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100">
+        <div v-if="multiple && showSelectAll" @click="handleSelectAll" :class="['flex items-center px-3 py-2 cursor-pointer border-b', themeConfig.option, themeConfig.selectAll]">
           <input type="checkbox" :checked="isAllSelected" :indeterminate="isIndeterminate" class="mr-2 text-blue-600 focus:ring-blue-500 cursor-pointer" />
-          <span class="text-sm text-gray-700">全选</span>
+          <span :class="['text-sm text-gray-700', themeConfig.optionSearch]">全选</span>
         </div>
 
         <!-- 选项列表 -->
-        <div v-if="filteredOptions.length === 0" class="px-3 py-2 text-sm text-gray-500 text-center">
+        <div v-if="filteredOptions.length === 0" :class="['px-3 py-2 text-sm text-center', themeConfig.noData]">
           {{ noDataText }}
         </div>
 
@@ -68,7 +67,7 @@
           v-for="option in filteredOptions"
           :key="getOptionKey(option)"
           @click="handleOptionClick(option)"
-          :class="['flex items-center px-3 py-2 cursor-pointer transition-colors', 'hover:bg-blue-50', isOptionSelected(option) ? 'bg-blue-100 text-blue-700' : 'text-gray-700']"
+          :class="['flex items-center px-3 py-2 cursor-pointer transition-colors', isOptionSelected(option) ? themeConfig.optionSelected : themeConfig.option]"
         >
           <!-- 多选框 -->
           <input v-if="multiple" type="checkbox" :checked="isOptionSelected(option)" class="mr-2 text-blue-600 focus:ring-blue-500" @click.stop />
@@ -94,6 +93,8 @@
 import { ArrowDown, Check, Close, CircleCloseFilled } from "@element-plus/icons-vue";
 import type { DropdownOption } from "../type";
 
+// 定义主题类型
+type ThemeType = "light" | "dark";
 // 定义组件属性
 interface Props {
   // 基础配置
@@ -121,6 +122,9 @@ interface Props {
 
   // 筛选类型
   filterType?: "subject" | "score" | "batch" | "custom";
+
+  // 主题配置
+  theme?: ThemeType;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -138,6 +142,7 @@ const props = withDefaults(defineProps<Props>(), {
   valueKey: "value",
   noDataText: "暂无数据",
   filterType: "custom",
+  theme: "light",
 });
 
 const emit = defineEmits<{
@@ -203,6 +208,40 @@ const isIndeterminate = computed(() => {
   if (!props.multiple) return false;
   const selectedCount = filteredOptions.value.filter((option) => selectedValues.value.includes(getOptionValue(option))).length;
   return selectedCount > 0 && selectedCount < filteredOptions.value.length;
+});
+
+const themeConfig = computed(() => {
+  const themes = {
+    light: {
+      trigger: "bg-white border-gray-300 text-gray-900 hover:border-blue-500 focus:border-blue-500 focus:ring-blue-500",
+      triggerDisabled: "bg-gray-100",
+      dropdown: "bg-white border-gray-200",
+      inputText: "bg-[#e8e8e8]",
+      inputSpan: "",
+      closeIconText: "text-black/40 hover:text-black/80",
+      option: "text-gray-700 hover:bg-blue-50",
+      optionSelected: "bg-blue-100 text-blue-700",
+      search: "border-gray-300 focus:ring-blue-500",
+      optionSearch: "border-gray-700 focus:ring-blue-500",
+      selectAll: "border-gray-100",
+      noData: "text-gray-500",
+    },
+    dark: {
+      trigger: "bg-gray-800 border-gray-600 text-gray-100 hover:border-blue-500 focus:border-blue-400 focus:ring-blue-400",
+      triggerDisabled: "bg-gray-700",
+      dropdown: "bg-gray-800 border-gray-600 dark custom-scroll",
+      inputText: "bg-[#393939]",
+      inputSpan: "text-white/80",
+      closeIconText: "text-white/35 hover:text-white/80",
+      option: "text-gray-200 hover:bg-gray-700",
+      optionSelected: "bg-blue-900 text-blue-200",
+      search: "bg-gray-700 border-gray-600 text-gray-100 focus:ring-blue-400",
+      optionSearch: "text-gray-100",
+      selectAll: "border-gray-600",
+      noData: "text-gray-400",
+    },
+  };
+  return themes[props.theme];
 });
 
 // 监听器
@@ -339,7 +378,6 @@ const handleClickOutside = (event: MouseEvent) => {
   }
 };
 
-// 暴露方法
 defineExpose({
   focus: () => dropdownRef.value?.focus(),
   blur: () => {
@@ -350,4 +388,24 @@ defineExpose({
 });
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.custom-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 100, 100, 0.6);
+  border-radius: 4px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background-color: rgba(30, 30, 30, 0.2);
+}
+
+.dark .custom-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(160, 160, 160, 0.6);
+}
+.dark .custom-scroll::-webkit-scrollbar-track {
+  background-color: rgba(50, 50, 50, 0.4);
+}
+</style>
