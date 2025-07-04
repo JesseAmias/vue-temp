@@ -57,7 +57,6 @@ export const useUserStore = defineStore("user", () => {
 
   function clearUserInfo() {
     userInfo.value = { username: "", password: "" };
-
     if (!loginStore.rememberMe) {
       localStorage.removeItem("username");
       localStorage.removeItem("password");

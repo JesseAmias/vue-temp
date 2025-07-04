@@ -91,41 +91,7 @@
 
 <script setup lang="ts">
 import { ArrowDown, Check, Close, CircleCloseFilled } from "@element-plus/icons-vue";
-import type { DropdownOption } from "../type";
-
-// 定义主题类型
-type ThemeType = "light" | "dark";
-// 定义组件属性
-interface Props {
-  // 基础配置
-  modelValue?: any;
-  options: DropdownOption[];
-  placeholder?: string;
-  disabled?: boolean;
-  clearable?: boolean;
-  width?: string;
-
-  // 选择模式
-  multiple?: boolean;
-  showSelectAll?: boolean;
-
-  // 搜索功能
-  searchable?: boolean;
-  searchPlaceholder?: string;
-
-  // 自定义字段映射
-  labelKey?: string;
-  valueKey?: string;
-
-  // 选项无数据时显示文本
-  noDataText?: string;
-
-  // 筛选类型
-  filterType?: "subject" | "score" | "batch" | "custom";
-
-  // 主题配置
-  theme?: ThemeType;
-}
+import type { DropdownOption, Props } from "../types/customDropdown";
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: undefined,

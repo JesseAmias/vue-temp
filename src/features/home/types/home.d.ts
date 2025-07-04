@@ -4,13 +4,6 @@ export interface LoginCredentials {
   captchaToken: string; // 添加滑动校验的令牌
 }
 
-export interface DropdownOption {
-  label: string;
-  value: any;
-  disabled?: boolean;
-  [key: string]: any;
-}
-
 export type SelectedOptions = DropdownOption | DropdownOption[];
 export interface ErrorType {
   code: string;
@@ -20,4 +13,27 @@ export interface ErrorType {
   originErrorCode: string;
   originErrorMsg: string;
   appVersion: string;
+}
+
+export interface TableRow {
+  id: number;
+  name: string;
+  studentId: string;
+  subject: string;
+  score: number;
+  examBatch: string;
+}
+
+export interface ColumnConfig {
+  key: keyof TableRow;
+  dataKey: keyof TableRow;
+  label: string;
+  width: number;
+  visible: boolean;
+  sortable: boolean;
+}
+
+export enum ExportType {
+  XLSX = "xlsx",
+  CSV = "csv",
 }

@@ -213,7 +213,7 @@
 import type { CheckboxValueType } from "element-plus";
 import { User, Setting, House, Search, Grid, Guide, Document, Moon } from "@element-plus/icons-vue";
 import CustomDropdown from "./CustomDropdown.vue";
-import type { SelectedOptions } from "../type";
+import type { SelectedOptions, TableRow, ColumnConfig, ExportType } from "../types/home";
 import { useLoginStoreHook } from "@/stores/login";
 import { useStudentsFilterStore } from "@/stores/filter";
 
@@ -227,29 +227,6 @@ import { useFileExport } from "@/utils/tableExport";
 const circleUrl = "https://dev-file.iviewui.com/userinfoPDvn9gKWYihR24SpgC319vXY8qniCqj4/avatar";
 
 const searchVal = ref("");
-
-interface TableRow {
-  id: number;
-  name: string;
-  studentId: string;
-  subject: string;
-  score: number;
-  examBatch: string;
-}
-
-interface ColumnConfig {
-  key: keyof TableRow;
-  dataKey: keyof TableRow;
-  label: string;
-  width: number;
-  visible: boolean;
-  sortable: boolean;
-}
-
-enum ExportType {
-  XLSX = "xlsx",
-  CSV = "csv",
-}
 
 const loginStore = useLoginStoreHook();
 const filterStore = useStudentsFilterStore();

@@ -1,5 +1,5 @@
 import { axios } from "@/lib/axios";
-import type { ErrorType } from "../type";
+import type { ErrorType } from "../types/home";
 
 interface TableRow {
   id: number;
@@ -21,11 +21,9 @@ interface StudentsInfoResponse extends ErrorType {
 }
 
 export const studentsInfo = (data: StudentsInfoParam): Promise<StudentsInfoResponse> => {
-  return axios.post("/api/stuentsInfo", data);
+  return axios.post("/api/studentsInfo", data);
 };
 
 export const studentsInfoError = (data: StudentsInfoParam): Promise<StudentsInfoResponse> => {
-  return axios.post("/api/stuentsInfoError", data);
+  return axios.post("/api/studentsInfoError", data);
 };
-
-//

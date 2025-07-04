@@ -1,8 +1,8 @@
 <template>
-  <div class="flex grid grid-cols-1 md:grid-cols-2 gap-4 min-h-screen items-center justify-center bg-indigo-100 px-20 py-12 sm:px-6 lg:px-60" :style="bgStyle">
+  <div class="flex grid grid-cols-1 md:grid-cols-2 gap-4 min-h-screen items-center justify-center bg-indigo-100 px-3 py-12 sm:px-6 lg:px-[150px]" :style="bgStyle">
     <div class="login-left flex items-center justify-center relative px-10">
       <div class="text-center text-white z-10 relative max-w-md">
-        <div class="mb-8">
+        <div>
           <div class="w-24 h-24 mx-auto mb-4 bg-white bg-opacity-20 rounded-full flex items-center justify-center logo-glow">
             <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
@@ -13,7 +13,7 @@
           <p class="description mt-10 text-white/80">请使用您的账户信息登录系统</p>
         </div>
 
-        <div class="space-y-4 text-center">
+        <div class="space-y-4 text-center hidden lg:block mt-8">
           <p class="text-lg opacity-90">数字化管理</p>
           <p class="text-lg opacity-90">提升教学效率</p>
           <p class="text-lg opacity-90">智能化的课程安排</p>

@@ -11,6 +11,7 @@ export const useConfigStore = defineStore("config", {
         .then((res) => res.json())
         .then((data) => {
           console.log(data);
+          return data;
         });
       return config;
     },

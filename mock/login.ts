@@ -2,7 +2,7 @@ export default [
   {
     url: "/api/login",
     method: "post",
-    response: ({ body }) => {
+    response: ({ body }: any) => {
       const { userName, userPwd } = body;
 
       const users = [
