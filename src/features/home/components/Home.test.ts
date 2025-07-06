@@ -21,6 +21,4 @@ describe("Home.vue", () => {
     });
     expect(wrapper.text()).toContain("教学管理系统");
   });
-
-  it("", () => {});
 });

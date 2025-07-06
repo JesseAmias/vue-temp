@@ -42,8 +42,7 @@ const router = createRouter({
 // 导航守卫，判断是否登录
 router.beforeEach((to, from, next) => {
   if (to.path !== "/login" && !loginStore.isLogin) {
-    // next({ path: "/login" });
-    next();
+    next({ path: "/login" });
   } else {
     next();
   }

@@ -116,6 +116,9 @@ describe("useFileExport", () => {
   });
 
   it("XLSX导出失败返回失败", () => {
+    // 临时禁用 console.error
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     const saveAsSpy = vi.spyOn(FileSaver, "saveAs").mockImplementation(() => {
       throw new Error("保存失败");
     });
@@ -123,6 +126,8 @@ describe("useFileExport", () => {
     const xlsxResult = exportData(testData, "xlsx");
     expect(xlsxResult.success).toBe(false);
     expect(xlsxResult.message).toBe("XLSX 导出失败");
+
     saveAsSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
   });
 });

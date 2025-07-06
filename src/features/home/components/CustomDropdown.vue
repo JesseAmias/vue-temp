@@ -21,7 +21,7 @@
         </div>
       </template>
       <template v-else>
-        <span :class="[themeConfig.inputSpan, getDisplayTextClass()]"> {{ displayText.length ? displayText : placeholder }} </span>
+        <span :class="[themeConfig.inputSpan, getDisplayTextClass(selectedValues)]"> {{ displayText.length ? displayText : placeholder }} </span>
       </template>
 
       <!-- <el-icon :class="['ml-2 transition-transform', isOpen ? 'rotate-180' : '']" :size="16"> -->
@@ -67,10 +67,10 @@
           v-for="option in filteredOptions"
           :key="getOptionKey(option)"
           @click="handleOptionClick(option)"
-          :class="['flex items-center px-3 py-2 cursor-pointer transition-colors', isOptionSelected(option) ? themeConfig.optionSelected : themeConfig.option]"
+          :class="['flex items-center px-3 py-2 cursor-pointer transition-colors', isOptionSelected(selectedValues, option) ? themeConfig.optionSelected : themeConfig.option]"
         >
           <!-- 多选框 -->
-          <input v-if="multiple" type="checkbox" :checked="isOptionSelected(option)" class="mr-2 text-blue-600 focus:ring-blue-500" @click.stop />
+          <input v-if="multiple" type="checkbox" :checked="isOptionSelected(selectedValues, option)" class="mr-2 text-blue-600 focus:ring-blue-500" @click.stop />
 
           <!-- 选项内容 -->
           <div class="flex-1">
@@ -80,7 +80,7 @@
           </div>
 
           <!-- 选中标记 (单选模式) -->
-          <el-Icon v-if="!multiple && isOptionSelected(option)" class="text-blue-600" :size="16">
+          <el-Icon v-if="!multiple && isOptionSelected(selectedValues, option)" class="text-blue-600" :size="16">
             <Check />
           </el-Icon>
         </div>
@@ -92,6 +92,8 @@
 <script setup lang="ts">
 import { ArrowDown, Check, Close, CircleCloseFilled } from "@element-plus/icons-vue";
 import type { DropdownOption, Props } from "../types/customDropdown";
+
+import { getOptionLabel, getOptionValue, getOptionKey, isOptionSelected, getDisplayTextClass, filterOptions } from "./composables/useDropdownLogic";
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: undefined,
@@ -223,25 +225,25 @@ watch(
 );
 
 // 获取选项标签
-const getOptionLabel = (option: DropdownOption): string => {
-  return option[props.labelKey] || option.label || String(option);
-};
+// const getOptionLabel = (option: DropdownOption): string => {
+//   return option[props.labelKey] || option.label || String(option);
+// };
 
-const getOptionValue = (option: DropdownOption): any => {
-  return option[props.valueKey] !== undefined ? option[props.valueKey] : option.value;
-};
+// const getOptionValue = (option: DropdownOption): any => {
+//   return option[props.valueKey] !== undefined ? option[props.valueKey] : option.value;
+// };
 
-const getOptionKey = (option: DropdownOption): string => {
-  return `${getOptionValue(option)}_${getOptionLabel(option)}`;
-};
+// const getOptionKey = (option: DropdownOption): string => {
+//   return `${getOptionValue(option)}_${getOptionLabel(option)}`;
+// };
 
-const getDisplayTextClass = (): string => {
-  return selectedValues.value.length === 0 ? "text-gray-400" : "text-gray-900";
-};
+// const getDisplayTextClass = (): string => {
+//   return selectedValues.value.length === 0 ? "text-gray-400" : "text-gray-900";
+// };
 
-const isOptionSelected = (option: DropdownOption): boolean => {
-  return selectedValues.value.includes(getOptionValue(option));
-};
+// const isOptionSelected = (option: DropdownOption): boolean => {
+//   return selectedValues.value.includes(getOptionValue(option));
+// };
 
 const toggleDropdown = () => {
   if (props.disabled) return;

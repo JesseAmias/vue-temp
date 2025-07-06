@@ -15,6 +15,7 @@ interface LoginResponse extends ErrorType {
     token: string;
   };
 }
+
 export const postLogin = (data: loginParam): Promise<LoginResponse> => {
   return axios.post("/api/login", {
     ...data,

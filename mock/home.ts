@@ -1,5 +1,5 @@
 import type { MockMethod } from "vite-plugin-mock";
-import { generateMockData } from "@/utils/generateMockData";
+import { generateMockData } from "../src/utils/generateMockData";
 
 export default [
   {

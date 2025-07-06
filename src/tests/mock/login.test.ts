@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import LoginMock from "./login";
+import LoginMock from "@/../mock/login";
 
 const loginApi = LoginMock.find((item) => item.url === "/api/login");
 const loginOut = LoginMock.find((item) => item.url === "/api/logout");
