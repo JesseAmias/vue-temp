@@ -6,6 +6,7 @@ export interface Props {
   modelValue?: any;
   options: DropdownOption[];
   placeholder?: string;
+  isOpen?: boolean;
   disabled?: boolean;
   clearable?: boolean;
   width?: string;

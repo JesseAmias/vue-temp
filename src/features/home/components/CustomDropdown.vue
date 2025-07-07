@@ -5,7 +5,7 @@
       @mouseenter="handleMouseEnter"
       @mouseleave="handleMouseLeave"
       :class="[
-        'flex items-center justify-between px-[8px] min-h-[36px] border rounded-md cursor-pointer transition-colors',
+        'dropdown-box flex items-center justify-between px-[8px] min-h-[36px] border rounded-md cursor-pointer transition-colors',
         'hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
         isOpen ? 'border-blue-500 ring-2 ring-blue-500' : 'border-gray-300',
         disabled ? themeConfig.triggerDisabled + ' cursor-not-allowed' : themeConfig.trigger,
@@ -15,19 +15,19 @@
       <template v-if="multiple && displayText?.length">
         <div class="flex flex-wrap justify-start">
           <div v-for="(label, index) in displayText" :key="index" :class="['flex items-center p-[2px_8px]  m-[3px_4px_3px_0] rounded shrink-0', themeConfig.inputText]">
-            <span :class="[themeConfig.inputSpan]"> {{ label }} </span>
-            <el-icon :class="['ml-[8px]', themeConfig.closeIconText]" @click.stop="removeSelectedOption(label)"><Close /></el-icon>
+            <span :class="['label-text', themeConfig.inputSpan]"> {{ label }} </span>
+            <el-icon :class="['remove-icon ml-[8px]', themeConfig.closeIconText]" @click.stop="removeSelectedOption(label)"><Close /></el-icon>
           </div>
         </div>
       </template>
       <template v-else>
-        <span :class="[themeConfig.inputSpan, getDisplayTextClass(selectedValues)]"> {{ displayText.length ? displayText : placeholder }} </span>
+        <span :class="['label-text', themeConfig.inputSpan, getDisplayTextClass(selectedValues)]"> {{ displayText.length ? displayText : placeholder }} </span>
       </template>
 
       <!-- <el-icon :class="['ml-2 transition-transform', isOpen ? 'rotate-180' : '']" :size="16"> -->
-      <el-icon color="rgba(0, 0, 0, .4)" :class="['ml-2 transition-transform', themeConfig.clearIconText]" :size="16">
+      <el-icon color="rgba(0, 0, 0, .4)" :class="[' ml-2 transition-transform', themeConfig.clearIconText]" :size="16">
         <ArrowDown v-if="!dropdownHover" />
-        <CircleCloseFilled v-else @click.stop="handleClear()" />
+        <CircleCloseFilled v-else class="clear-icon" @click.stop="handleClear()" />
       </el-icon>
     </div>
 
@@ -53,9 +53,9 @@
         </div>
 
         <!-- 全选选项 (多选模式下) -->
-        <div v-if="multiple && showSelectAll" @click="handleSelectAll" :class="['flex items-center px-3 py-2 cursor-pointer border-b', themeConfig.option, themeConfig.selectAll]">
+        <div v-if="multiple && showSelectAll" @click="handleSelectAll" :class="['select-all flex items-center px-3 py-2 cursor-pointer border-b', themeConfig.option, themeConfig.selectAll]">
           <input type="checkbox" :checked="isAllSelected" :indeterminate="isIndeterminate" class="mr-2 text-blue-600 focus:ring-blue-500 cursor-pointer" />
-          <span :class="['text-sm text-gray-700', themeConfig.optionSearch]">全选</span>
+          <span :class="['text-sm', themeConfig.optionSearch]">全选</span>
         </div>
 
         <!-- 选项列表 -->
@@ -67,7 +67,7 @@
           v-for="option in filteredOptions"
           :key="getOptionKey(option)"
           @click="handleOptionClick(option)"
-          :class="['flex items-center px-3 py-2 cursor-pointer transition-colors', isOptionSelected(selectedValues, option) ? themeConfig.optionSelected : themeConfig.option]"
+          :class="['filter-options flex items-center px-3 py-2 cursor-pointer transition-colors', isOptionSelected(selectedValues, option) ? themeConfig.optionSelected : themeConfig.option]"
         >
           <!-- 多选框 -->
           <input v-if="multiple" type="checkbox" :checked="isOptionSelected(selectedValues, option)" class="mr-2 text-blue-600 focus:ring-blue-500" @click.stop />
@@ -93,12 +93,13 @@
 import { ArrowDown, Check, Close, CircleCloseFilled } from "@element-plus/icons-vue";
 import type { DropdownOption, Props } from "../types/customDropdown";
 
-import { getOptionLabel, getOptionValue, getOptionKey, isOptionSelected, getDisplayTextClass, filterOptions } from "./composables/useDropdownLogic";
+import { getOptionLabel, getOptionValue, getOptionKey, isOptionSelected, getDisplayTextClass, getFilterOptions, getDisplayText, getSelectAllValues } from "./composables/useDropdownLogic";
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: undefined,
   options: () => [],
   placeholder: "请选择",
+  isOpen: false,
   disabled: false,
   clearable: true,
   width: "200px",
@@ -120,7 +121,7 @@ const emit = defineEmits<{
   "visible-change": [visible: boolean];
 }>();
 
-const isOpen = ref(false);
+const isOpen = ref(props.isOpen);
 const searchKeyword = ref("");
 const dropdownRef = ref<HTMLElement>();
 const dropdownHover = ref(false);
@@ -141,30 +142,11 @@ const selectedValues = computed(() => {
 });
 
 const filteredOptions = computed(() => {
-  let options = props.options.filter((option) => !option.disabled);
-
-  if (props.searchable && searchKeyword.value) {
-    const keyword = searchKeyword.value.toLowerCase();
-    options = options.filter((option) => getOptionLabel(option).toLowerCase().includes(keyword));
-  }
-
-  return options;
+  return getFilterOptions(props.options, props.searchable, searchKeyword.value, props.labelKey);
 });
 
 const displayText = computed(() => {
-  if (selectedValues.value.length === 0) {
-    return props.multiple ? [] : "";
-  }
-
-  if (props.multiple) {
-    return selectedValues.value.map((value) => {
-      const option = props.options.find((opt) => getOptionValue(opt) === value);
-      return option ? getOptionLabel(option) : "";
-    });
-  } else {
-    const option = props.options.find((opt) => getOptionValue(opt) === props.modelValue);
-    return option ? getOptionLabel(option) : "";
-  }
+  return getDisplayText(selectedValues.value, props.options, props.multiple, props.modelValue, props.labelKey);
 });
 
 const isAllSelected = computed(() => {
@@ -191,7 +173,7 @@ const themeConfig = computed(() => {
       option: "text-gray-700 hover:bg-blue-50",
       optionSelected: "bg-blue-100 text-blue-700",
       search: "border-gray-300 focus:ring-blue-500",
-      optionSearch: "border-gray-700 focus:ring-blue-500",
+      optionSearch: "text-gray-700 border-gray-700 focus:ring-blue-500",
       selectAll: "border-gray-100",
       noData: "text-gray-500",
     },
@@ -206,7 +188,7 @@ const themeConfig = computed(() => {
       option: "text-gray-200 hover:bg-gray-700",
       optionSelected: "bg-blue-900 text-blue-200",
       search: "bg-gray-700 border-gray-600 text-gray-100 focus:ring-blue-400",
-      optionSearch: "text-gray-100",
+      optionSearch: "text-gray-200",
       selectAll: "border-gray-600",
       noData: "text-gray-400",
     },
@@ -223,27 +205,6 @@ watch(
     }
   },
 );
-
-// 获取选项标签
-// const getOptionLabel = (option: DropdownOption): string => {
-//   return option[props.labelKey] || option.label || String(option);
-// };
-
-// const getOptionValue = (option: DropdownOption): any => {
-//   return option[props.valueKey] !== undefined ? option[props.valueKey] : option.value;
-// };
-
-// const getOptionKey = (option: DropdownOption): string => {
-//   return `${getOptionValue(option)}_${getOptionLabel(option)}`;
-// };
-
-// const getDisplayTextClass = (): string => {
-//   return selectedValues.value.length === 0 ? "text-gray-400" : "text-gray-900";
-// };
-
-// const isOptionSelected = (option: DropdownOption): boolean => {
-//   return selectedValues.value.includes(getOptionValue(option));
-// };
 
 const toggleDropdown = () => {
   if (props.disabled) return;
@@ -263,7 +224,6 @@ const handleOptionClick = (option: DropdownOption) => {
     } else {
       newValues.push(value);
     }
-
     emit("update:modelValue", newValues);
     emit(
       "change",
@@ -281,35 +241,21 @@ const handleOptionClick = (option: DropdownOption) => {
 const handleSelectAll = () => {
   if (!props.multiple) return;
 
-  if (isAllSelected.value) {
-    // 取消全选
-    // newValues：选中的值中，没有包含在已过滤的选项中（如：某些值是disabled，保留其被选中状态）
-    const newValues = selectedValues.value.filter((val) => !filteredOptions.value.some((option) => getOptionValue(option) === val));
-    emit("update:modelValue", newValues);
-    emit(
-      "change",
-      newValues,
-      props.options.filter((opt) => newValues.includes(getOptionValue(opt))),
-    );
-  } else {
-    // 全选
-    const allValues = [...selectedValues.value];
-    filteredOptions.value.forEach((option) => {
-      const value = getOptionValue(option);
-      !allValues.includes(value) && allValues.push(value);
-    });
-    emit("update:modelValue", allValues);
-    emit(
-      "change",
-      allValues,
-      props.options.filter((opt) => allValues.includes(getOptionValue(opt))),
-    );
-  }
+  const selectedAll = !isAllSelected.value;
+  const newValues = getSelectAllValues(selectedAll, filteredOptions.value, selectedValues.value);
+  emit("update:modelValue", newValues);
+  emit(
+    "change",
+    newValues,
+    props.options.filter((opt) => newValues.includes(getOptionValue(opt))),
+  );
 };
 
 const removeSelectedOption = (label: string) => {
   if (props.multiple) {
-    const newValues = selectedValues.value.filter((val) => val !== label);
+    const option = props.options.find((opt) => getOptionLabel(opt) === label);
+    if (!option) return;
+    const newValues = selectedValues.value.filter((val) => val !== getOptionValue(option, label));
     emit("update:modelValue", newValues);
     emit(
       "change",

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { getOptionLabel, getOptionValue, getOptionKey, isOptionSelected, getDisplayTextClass, filterOptions } from "./useDropdownLogic";
+import { getOptionLabel, getOptionValue, getOptionKey, isOptionSelected, getDisplayTextClass, getFilterOptions, getDisplayText, getSelectAllValues } from "./useDropdownLogic";
 import type { DropdownOption } from "../../types/customDropdown";
 
 describe("useDropdownLogic", () => {
@@ -28,12 +28,36 @@ describe("useDropdownLogic", () => {
     expect(getDisplayTextClass([1])).toBe("text-gray-900");
   });
 
-  it("filterOptions by keyword", () => {
+  it("getFilterOptions by keyword", () => {
     const options: DropdownOption[] = [
-      { label: "Apple", value: 1 },
-      { label: "Banana", value: 2 },
+      { label: "Apple", value: 1, searchable: true },
+      { label: "Banana", value: 2, searchable: true },
     ];
-    expect(filterOptions(options, "a")).toHaveLength(2);
-    expect(filterOptions(options, "ban")).toEqual([{ label: "Banana", value: 2 }]);
+    expect(getFilterOptions(options, true, "a")).toHaveLength(2);
+    expect(getFilterOptions(options, true, "ban")).toEqual([{ label: "Banana", value: 2, searchable: true }]);
+  });
+
+  it("getDisplayText", () => {
+    const options: DropdownOption[] = [
+      { label: "Apple", value: 1, searchable: true },
+      { label: "Banana", value: 2, searchable: true },
+    ];
+    const selectedValues1 = [1];
+    const selectedValues2 = [1, 2];
+
+    expect(getDisplayText(selectedValues1, options, true, 1)).toEqual(["Apple"]);
+    expect(getDisplayText(selectedValues2, options, true, 1)).toEqual(["Apple", "Banana"]);
+    expect(getDisplayText(selectedValues1, options, true, 1)).toEqual(["Apple"]);
+  });
+
+  it("getSelectAllValues", () => {
+    const filteredOptions: DropdownOption[] = [
+      { label: "Apple", value: 1, searchable: true },
+      { label: "Banana", value: 2, searchable: true },
+    ];
+    expect(getSelectAllValues(true, filteredOptions, [1])).toEqual([1, 2]);
+    expect(getSelectAllValues(false, filteredOptions, [1])).toEqual([]);
+    expect(getSelectAllValues(false, filteredOptions, [1, 2])).toEqual([]);
+    expect(getSelectAllValues(false, filteredOptions, [1, 2, 3])).toEqual([3]);
   });
 });

@@ -5,6 +5,12 @@ export interface LoginCredentials {
 }
 
 export type SelectedOptions = DropdownOption | DropdownOption[];
+
+export type Filters = {
+  subjects: string[];
+  scoreRange: string | undefined;
+  batch: string[];
+};
 export interface ErrorType {
   code: string;
   msg: string;

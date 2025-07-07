@@ -223,16 +223,39 @@ import { useDebounceFn } from "@vueuse/core";
 import { TableV2SortOrder } from "element-plus";
 import type { SortBy } from "element-plus";
 import { useFileExport } from "@/utils/tableExport";
-
+import { getFilterData, getSortedTableData } from "./composables/useHomeLogic";
 const circleUrl = "https://dev-file.iviewui.com/userinfoPDvn9gKWYihR24SpgC319vXY8qniCqj4/avatar";
 
-const searchVal = ref("");
+// 筛选选项配置
+const subjectOptions = [
+  { label: "语文", value: "语文" },
+  { label: "数学", value: "数学" },
+  { label: "英语", value: "英语" },
+  { label: "物理", value: "物理" },
+  { label: "化学", value: "化学" },
+  { label: "生物", value: "生物" },
+  { label: "历史", value: "历史" },
+  { label: "地理", value: "地理" },
+  { label: "政治", value: "政治" },
+];
+
+const scoreRangeOptions = [
+  { label: "未及格 (0-59)", value: "0-59" },
+  { label: "良好 (60-79)", value: "60-79" },
+  { label: "优秀 (80-100)", value: "80-100" },
+];
+
+const batchOptions = [
+  { label: "期中考试", value: "期中考试" },
+  { label: "期末考试", value: "期末考试" },
+];
 
 const loginStore = useLoginStoreHook();
 const filterStore = useStudentsFilterStore();
 const router = useRouter();
 const { exportData } = useFileExport();
 
+const searchVal = ref("");
 const tableData = ref<TableRow[]>([]);
 // 原始表格数据
 const originTableData = ref<TableRow[]>([]);
@@ -277,57 +300,12 @@ const visibleColumns = computed(() => {
 
 // 过滤
 const filteredData = computed(() => {
-  return originTableData.value.filter((row) => {
-    // 科目筛选
-    if (filters.value.subjects.length && !filters.value.subjects.includes(row.subject)) {
-      return false;
-    }
-
-    // 分数段筛选
-    if (filters.value.scoreRange) {
-      const [min, max] = filters.value.scoreRange.split("-").map(Number);
-      if (row.score < min || row.score > max) {
-        return false;
-      }
-    }
-
-    // 批次筛选
-    if (filters.value.batch.length && !filters.value.batch.includes(row.examBatch)) {
-      return false;
-    }
-
-    return true;
-  });
+  return getFilterData(originTableData.value, filters.value);
 });
 
 // 排序
 const sortedTableData = computed(() => {
-  if (!sortState.value.key || !sortState.value.order) {
-    return tableData.value;
-  }
-  const data = [...tableData.value];
-  const { key, order } = sortState.value;
-
-  return data.sort((itemA: TableRow, itemB: TableRow) => {
-    const valueA = itemA[key as keyof TableRow];
-    const valueB = itemB[key as keyof TableRow];
-
-    // 处理 null/undefined 值
-    if (valueA == null && valueB == null) return 0;
-    if (valueA == null) return 1;
-    if (valueB == null) return -1;
-
-    // 数字类型排序
-    if (typeof valueA === "number" && typeof valueB === "number") {
-      return order === "asc" ? valueA - valueB : valueB - valueA;
-    }
-
-    // 字符串类型排序
-    const strA = String(valueA).toLowerCase();
-    const strB = String(valueB).toLowerCase();
-
-    return order === "asc" ? strA.localeCompare(strB) : strB.localeCompare(strA);
-  });
+  return getSortedTableData(tableData.value, sortState.value);
 });
 
 onMounted(() => {
@@ -342,30 +320,6 @@ const updateSelectAllState = () => {
   allSelected.value = visibleCount === totalCount;
   isIndeterminate.value = visibleCount > 0 && visibleCount < totalCount;
 };
-
-// 筛选选项配置
-const subjectOptions = [
-  { label: "语文", value: "语文" },
-  { label: "数学", value: "数学" },
-  { label: "英语", value: "英语" },
-  { label: "物理", value: "物理" },
-  { label: "化学", value: "化学" },
-  { label: "生物", value: "生物" },
-  { label: "历史", value: "历史" },
-  { label: "地理", value: "地理" },
-  { label: "政治", value: "政治" },
-];
-
-const scoreRangeOptions = [
-  { label: "未及格 (0-59)", value: "0-59" },
-  { label: "良好 (60-79)", value: "60-79" },
-  { label: "优秀 (80-100)", value: "80-100" },
-];
-
-const batchOptions = [
-  { label: "期中考试", value: "期中考试" },
-  { label: "期末考试", value: "期末考试" },
-];
 
 const getColumnWidth = (key: string): string | undefined => {
   const widthMap: Record<string, string> = {
