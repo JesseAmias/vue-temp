@@ -38,8 +38,3 @@ export interface ColumnConfig {
   visible: boolean;
   sortable: boolean;
 }
-
-export enum ExportType {
-  XLSX = "xlsx",
-  CSV = "csv",
-}

@@ -10,13 +10,13 @@
         </el-input>
 
         <template v-if="isLogin">
-          <el-dropdown class="hover:bg-[#f5f7fa] px-[18px] py-[8px] rounded-md">
-            <div class="el-dropdown-link flex items-center outline-none">
+          <el-dropdown class="system-setting-dropdown hover:bg-[#f5f7fa] px-[18px] py-[8px] rounded-md" :teleported="false">
+            <div class="flex items-center outline-none">
               <el-avatar size="small" :src="circleUrl" />
               <span class="ml-[10px]">Jesse</span>
             </div>
             <template #dropdown>
-              <el-dropdown-menu>
+              <el-dropdown-menu class="system-dropwdown-menu">
                 <el-dropdown-item>
                   <el-icon><User /></el-icon> 个人中心
                 </el-dropdown-item>
@@ -26,7 +26,7 @@
                 <el-dropdown-item @click="changeTheme">
                   <el-icon><Moon /></el-icon>主题切换
                 </el-dropdown-item>
-                <el-dropdown-item divided @click="handleLogout">
+                <el-dropdown-item divided class="logout-item" @click="handleLogout">
                   <el-icon class="rotate-[-90deg]"><House /></el-icon>退出登录
                 </el-dropdown-item>
               </el-dropdown-menu>
@@ -51,6 +51,7 @@
               <div class="flex items-center">
                 <div class="block text-sm font-medium text-gray-700 mr-2 shrink-0">科目</div>
                 <CustomDropdown
+                  class="subject-dropdown"
                   v-model="filters.subjects"
                   :options="subjectOptions"
                   placeholder="选择科目"
@@ -59,7 +60,7 @@
                   filter-type="subject"
                   width="100%"
                   :theme="currentTheme"
-                  @change="handleSubjectChange"
+                  @change="handleFilterChange"
                 />
               </div>
 
@@ -73,7 +74,7 @@
                   filter-type="score"
                   width="100%"
                   :theme="currentTheme"
-                  @change="handleScoreRangeChange"
+                  @change="handleFilterChange"
                 />
               </div>
 
@@ -88,7 +89,7 @@
                   filter-type="batch"
                   width="100%"
                   :theme="currentTheme"
-                  @change="handleBatchChange"
+                  @change="handleFilterChange"
                 />
               </div>
 
@@ -110,12 +111,12 @@
                   <el-icon class="cursor-pointer mr-[15px]" @click="changeTable"><Guide /></el-icon>
                 </el-tooltip>
                 <el-tooltip content="导出数据" placement="top">
-                  <el-dropdown trigger="click" placement="bottom-end">
+                  <el-dropdown class="export-dropdown" trigger="click" placement="bottom-end" :teleported="false">
                     <el-icon class="cursor-pointer mr-[15px]"><Document /></el-icon>
                     <!-- @click="exportData"  -->
                     <template #dropdown>
                       <el-dropdown-menu class="column-dropdown min-w-[100px]">
-                        <div class="py-[4px]">
+                        <div class="py-[4px] export-wrapper">
                           <div class="py-[5px] px-[16px] cursor-pointer hover:bg-blue-100" @click="handleExportData(ExportType.XLSX)">导出为 xls</div>
                           <div class="py-[5px] px-[16px] cursor-pointer hover:bg-blue-100" @click="handleExportData(ExportType.CSV)">导出为 csv</div>
                         </div>
@@ -123,8 +124,9 @@
                     </template>
                   </el-dropdown>
                 </el-tooltip>
+
                 <el-tooltip content="列设置" placement="top">
-                  <el-dropdown trigger="click" placement="bottom-end">
+                  <el-dropdown class="column-setting-dropdown" trigger="click" placement="bottom-end" :teleported="false">
                     <el-icon><Grid /></el-icon>
 
                     <template #dropdown>
@@ -160,12 +162,12 @@
                 >
                 </el-table-column>
 
-                <el-table-column label="操作" width="140" fixed="right">
-                  <template #default="scope">
-                    <el-button type="primary" size="small" @click="handleEdit(scope.row)"> 编辑 </el-button>
-                    <el-button type="danger" size="small" @click="handleDelete(scope.row)"> 删除 </el-button>
+                <!-- <el-table-column label="操作" width="140" fixed="right">
+                  <template>
+                    <el-button type="primary" size="small"> 编辑 </el-button>
+                    <el-button type="danger" size="small"> 删除 </el-button>
                   </template>
-                </el-table-column>
+                </el-table-column> -->
 
                 <template #empty>
                   <div class="empty-container" v-if="networkError">
@@ -213,7 +215,7 @@
 import type { CheckboxValueType } from "element-plus";
 import { User, Setting, House, Search, Grid, Guide, Document, Moon } from "@element-plus/icons-vue";
 import CustomDropdown from "./CustomDropdown.vue";
-import type { SelectedOptions, TableRow, ColumnConfig, ExportType } from "../types/home";
+import type { SelectedOptions, TableRow, ColumnConfig } from "../types/home";
 import { useLoginStoreHook } from "@/stores/login";
 import { useStudentsFilterStore } from "@/stores/filter";
 
@@ -225,6 +227,11 @@ import type { SortBy } from "element-plus";
 import { useFileExport } from "@/utils/tableExport";
 import { getFilterData, getSortedTableData } from "./composables/useHomeLogic";
 const circleUrl = "https://dev-file.iviewui.com/userinfoPDvn9gKWYihR24SpgC319vXY8qniCqj4/avatar";
+
+enum ExportType {
+  XLSX = "xlsx",
+  CSV = "csv",
+}
 
 // 筛选选项配置
 const subjectOptions = [
@@ -263,10 +270,10 @@ const originTableData = ref<TableRow[]>([]);
 const columns = ref<ColumnConfig[]>([
   { key: "id", label: "ID", dataKey: "id", width: 100, visible: true, sortable: false },
   { key: "name", label: "姓名", dataKey: "name", width: 200, visible: true, sortable: false },
-  { key: "studentId", label: "学号", dataKey: "studentId", width: 200, visible: true, sortable: false },
+  { key: "studentId", label: "学号", dataKey: "studentId", width: 220, visible: true, sortable: false },
   { key: "subject", label: "科目", dataKey: "subject", width: 200, visible: true, sortable: false },
   { key: "score", label: "成绩", dataKey: "score", width: 200, visible: true, sortable: true },
-  { key: "examBatch", label: "考试批次", dataKey: "examBatch", width: 200, visible: true, sortable: false },
+  { key: "examBatch", label: "考试批次", dataKey: "examBatch", width: 200, visible: false, sortable: false },
 ]);
 
 const allSelected = ref(false);
@@ -349,29 +356,11 @@ const columnToggle = () => {
   }
 };
 
-const handleEdit = (row: TableRow) => {
-  ElMessage.info(`编辑用户: ${row.name}`);
-};
-
-const handleDelete = (row: TableRow) => {
-  ElMessage.info(`删除用户: ${row.name}`);
-};
-
 const changeTable = () => {
   tableV2Enabled.value = !tableV2Enabled.value;
 };
 
-const handleSubjectChange = (value: string[], options: SelectedOptions) => {
-  currentPage.value = 1;
-  handleQuery();
-};
-
-const handleScoreRangeChange = (value: string, options: SelectedOptions) => {
-  currentPage.value = 1;
-  handleQuery();
-};
-
-const handleBatchChange = (value: string[], options: SelectedOptions) => {
+const handleFilterChange = (value: string[], options: SelectedOptions) => {
   currentPage.value = 1;
   handleQuery();
 };
@@ -391,11 +380,16 @@ const { mutate: updateStudentsInfo, isPending: loadingStudentsInfo } = useMutati
     return networkError.value ? studentsInfoError(params) : studentsInfo(params);
   },
   onSuccess: (res) => {
+    // 第一次模拟网络请求失败，之后设置为成功
     networkError.value = false;
 
     originTableData.value = res.data;
     tableData.value = [...res.data];
+    // handleQuery();
+
+    // console.log("before handleQuery");
     handleQuery();
+    // console.log("after handleQuery");
   },
   onError: () => {
     networkError.value = true;

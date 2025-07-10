@@ -15,7 +15,12 @@ type StudentsInfoParam = {
   pageSize: number;
 };
 
-interface StudentsInfoResponse extends ErrorType {
+// interface StudentsInfoResponse extends ErrorType {
+//   message: string;
+//   data: TableRow[];
+// }
+
+interface StudentsInfoResponse {
   message: string;
   data: TableRow[];
 }
