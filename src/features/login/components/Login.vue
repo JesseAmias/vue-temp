@@ -23,7 +23,7 @@
 
     <div class="flex justify-center">
       <div class="w-full max-w-md">
-        <div class="bg-white shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
+        <div class="bg-white shadow-md rounded-lg px-8 pt-6 pb-8">
           <div class="text-center mb-8">
             <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">登录</h2>
           </div>

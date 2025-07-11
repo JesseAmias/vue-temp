@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import CustomDropdown from "./CustomDropdown.vue";
 import type { DropdownOption } from "../types/customDropdown";
 
@@ -176,5 +176,45 @@ describe("CustomDropdown", () => {
     expect(wrapper.emitted("visible-change")?.pop()?.[0]).toBe(false);
 
     wrapper.unmount();
+  });
+
+  describe("测试defineExpose", () => {
+    it("测试focus", () => {
+      const wrapper = mount(CustomDropdown);
+
+      const mockFocus = vi.fn();
+      wrapper.vm.focus = mockFocus;
+
+      wrapper.vm.focus();
+      expect(mockFocus).toHaveBeenCalled();
+    });
+
+    it("测试blur", () => {
+      const wrapper = mount(CustomDropdown, {
+        props: {
+          options,
+          isOpen: true,
+        },
+      });
+      wrapper.vm.blur();
+
+      expect(wrapper.vm.isOpen).toBe(false);
+      expect(wrapper.emitted("visible-change")).toBeTruthy();
+      expect(wrapper.emitted("visible-change")?.pop()?.[0]).toBe(false);
+    });
+  });
+
+  it("handleMouseLeave", () => {
+    const wrapper = mount(CustomDropdown, {
+      props: {
+        options,
+      },
+    });
+
+    const dropdownEL = wrapper.find(".dropdown-box");
+    dropdownEL.trigger("mouseenter");
+    dropdownEL.trigger("mouseleave");
+    const vm = wrapper.vm as any;
+    expect(vm.dropdownHover).toBe(false);
   });
 });

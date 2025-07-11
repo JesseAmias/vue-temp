@@ -33,13 +33,13 @@ vi.mock("@tanstack/vue-query", async (importOriginal) => {
 });
 
 const mockLogout = vi.fn();
+const mockLoginStore = {
+  isLogin: true,
+  logout: mockLogout,
+};
 vi.mock("@/stores/login", async () => ({
-  useLoginStoreHook: () => ({
-    isLogin: true,
-    logout: mockLogout,
-  }),
+  useLoginStoreHook: () => mockLoginStore,
 }));
-import { useLoginStoreHook } from "@/stores/login";
 
 const mockReplace = vi.fn();
 vi.mock("vue-router", () => ({
@@ -89,6 +89,27 @@ describe("Home.vue", () => {
     expect(ElMessage.warning).not.toHaveBeenCalled();
 
     await checkboxInput.setValue(false);
+    expect(ElMessage.warning).toHaveBeenCalledWith("至少需要显示一列");
+  });
+
+  it("columnToggle", async () => {
+    const wrapper = mount(Home, {
+      global: {
+        plugins: [[vueQueryPlugin, options]],
+      },
+    });
+    const dropdownEl = wrapper.find(".column-setting-dropdown .el-icon");
+    await dropdownEl.trigger("click");
+
+    const checkboxInputs = wrapper.findAll(".column-list .el-checkbox input[type='checkbox'");
+
+    await Promise.all(
+      checkboxInputs.map(async (checkboxInput) => {
+        await checkboxInput.setValue(false);
+      }),
+    );
+    const vm = wrapper.vm as any;
+    expect(vm.columns.some((col: any) => col.visible === true));
     expect(ElMessage.warning).toHaveBeenCalledWith("至少需要显示一列");
   });
 
@@ -169,16 +190,11 @@ describe("Home.vue", () => {
   });
 
   it("handleLogout", async () => {
-    const loginStore = useLoginStoreHook();
-    const router = useRouter();
-
     const wrapper = mount(Home, {
       global: {
         plugins: [[vueQueryPlugin, options]],
       },
     });
-
-    const vm = wrapper.vm as any;
 
     const dropdownSystemEL = wrapper.find(".system-setting-dropdown ");
     await dropdownSystemEL.trigger("click");
@@ -190,5 +206,203 @@ describe("Home.vue", () => {
     expect(mockReplace).toHaveBeenCalledWith({
       path: "/login",
     });
+  });
+
+  it("changeTable", () => {
+    const wrapper = mount(Home, {
+      global: {
+        plugins: [[vueQueryPlugin, options]],
+      },
+    });
+    const vm = wrapper.vm as any;
+    const changeTalbleEl = wrapper.find(".chagne-table-icon");
+
+    changeTalbleEl.trigger("click");
+    expect(vm.tableV2Enabled).toBe(true);
+
+    changeTalbleEl.trigger("click");
+    expect(vm.tableV2Enabled).toBe(false);
+  });
+
+  it("handleSizeChange", async () => {
+    const wrapper = mount(Home, {
+      global: {
+        plugins: [[vueQueryPlugin, options]],
+      },
+    });
+    const vm = wrapper.vm as any;
+    const pageEl = wrapper.findComponent({ name: "ElPagination" });
+
+    await pageEl.vm.$emit("size-change", 50);
+
+    expect(vm.pageSize).toBe(50);
+    expect(vm.currentPage).toBe(1);
+  });
+
+  it("handleCurrentChange", async () => {
+    const wrapper = mount(Home, {
+      global: {
+        plugins: [[vueQueryPlugin, options]],
+      },
+    });
+    const vm = wrapper.vm as any;
+    const pageEl = wrapper.findComponent({ name: "ElPagination" });
+
+    await pageEl.vm.$emit("current-change", 2);
+    expect(vm.currentPage).toBe(2);
+  });
+
+  it("handleRest", () => {
+    const wrapper = mount(Home, {
+      global: {
+        plugins: [[vueQueryPlugin, options]],
+      },
+    });
+    const vm = wrapper.vm as any;
+    const actionEl = wrapper.findAll(".table-action .el-button");
+    vm.filters = {
+      subjects: ["语文"],
+      scores: [0, 100],
+      batches: [1, 2],
+    };
+    actionEl[1].trigger("click");
+    const filters = {
+      subjects: [],
+      scoreRange: undefined,
+      batch: [],
+    };
+    expect(vm.filters).toEqual(filters);
+  });
+
+  describe("handleSearch", async () => {
+    it("handleSearch-姓名模糊搜索", async () => {
+      // vi.useFakeTimers必须放在最前，启用假定时器
+      vi.useFakeTimers();
+
+      const wrapper = mount(Home, {
+        global: {
+          plugins: [[vueQueryPlugin, options]],
+        },
+      });
+      const vm = wrapper.vm as any;
+
+      const mockData = [
+        { name: "张三", studentId: "9876" },
+        { name: "李四", studentId: "12342" },
+        { name: "王五", studentId: "003" },
+      ];
+      vm.originTableData = mockData;
+      vm.tableData = [...mockData];
+
+      const input = wrapper.find(".search-input input");
+      await input.setValue("李");
+
+      // 快进时间，触发防抖函数
+      vi.advanceTimersByTime(500);
+      await nextTick();
+
+      expect(vm.tableData).toHaveLength(1);
+      expect(vm.tableData[0].name).toBe("李四");
+
+      vi.useRealTimers();
+    });
+
+    it("handleSearch-学号模糊搜索", async () => {
+      vi.useFakeTimers();
+
+      const wrapper = mount(Home, {
+        global: {
+          plugins: [[vueQueryPlugin, options]],
+        },
+      });
+      const vm = wrapper.vm as any;
+
+      const mockData = [
+        { name: "张三", studentId: "9876" },
+        { name: "李四", studentId: "12342" },
+        { name: "王五", studentId: "003" },
+      ];
+      vm.originTableData = mockData;
+      vm.tableData = [...mockData];
+
+      const input = wrapper.find(".search-input input");
+      await input.setValue("12");
+
+      // 快进时间，触发防抖函数
+      vi.advanceTimersByTime(500);
+      await nextTick();
+
+      expect(vm.tableData).toHaveLength(1);
+      expect(vm.tableData[0].studentId).toBe("12342");
+
+      vi.useRealTimers();
+    });
+  });
+
+  it("handleRetry", () => {
+    const wrapper = mount(Home, {
+      global: {
+        plugins: [[vueQueryPlugin, options]],
+      },
+    });
+    const vm = wrapper.vm as any;
+
+    expect(vm.networkError).toBe(true);
+    wrapper.find(".empty-container button").trigger("click");
+    expect(vm.networkError).toBe(false);
+  });
+
+  it("onSort", async () => {
+    const wrapper = mount(Home, {
+      global: {
+        plugins: [[vueQueryPlugin, options]],
+      },
+    });
+    const vm = wrapper.vm as any;
+    vm.tableV2Enabled = true;
+    const mockState = {
+      key: "score",
+      order: "desc",
+    };
+
+    await nextTick();
+
+    const tableEl = wrapper.findComponent({ name: "ElTableV2" });
+    await tableEl.vm.$emit("column-sort", mockState);
+    expect(vm.sortState).toEqual(mockState);
+  });
+
+  it("handleLogin", async () => {
+    mockLoginStore.isLogin = false;
+    const wrapper = mount(Home, {
+      global: {
+        plugins: [[vueQueryPlugin, options]],
+      },
+    });
+
+    await nextTick();
+    const unloginEl = wrapper.find(".unlogin");
+    unloginEl.trigger("click");
+
+    expect(mockReplace).toHaveBeenCalledWith({
+      path: "/login",
+    });
+  });
+
+  it("changeTheme", async () => {
+    mockLoginStore.isLogin = true;
+    const wrapper = mount(Home, {
+      global: {
+        plugins: [[vueQueryPlugin, options]],
+      },
+    });
+    const vm = wrapper.vm as any;
+
+    const dropdownSystemEL = wrapper.find(".system-setting-dropdown ");
+    await dropdownSystemEL.trigger("click");
+
+    const logoutEl = wrapper.find(".change-theme .el-icon");
+    await logoutEl.trigger("click");
+    expect(vm.currentTheme).toBe("dark");
   });
 });

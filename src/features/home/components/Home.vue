@@ -3,7 +3,7 @@
     <div class="navbar-wrapper relative flex justify-between items-center h-[50px] py-0 px-[20px] shadow-[0_1px_4px_rgba(0,21,41,.08)] text-lg font-semibold text-[#333]">
       <div class="nav-left hidden sm:block">教学管理系统</div>
       <div class="nav-right flex">
-        <el-input v-model.trim="searchVal" class="width-[240px] mr-10" placeholder="搜索" @input="handleSearch">
+        <el-input v-model.trim="searchVal" class="search-input width-[240px] mr-10" placeholder="搜索" @input="handleSearch">
           <template #prefix>
             <el-icon class="el-input__icon"><search /></el-icon>
           </template>
@@ -23,7 +23,7 @@
                 <el-dropdown-item>
                   <el-icon><Setting /></el-icon>设置
                 </el-dropdown-item>
-                <el-dropdown-item @click="changeTheme">
+                <el-dropdown-item class="change-theme" @click="changeTheme">
                   <el-icon><Moon /></el-icon>主题切换
                 </el-dropdown-item>
                 <el-dropdown-item divided class="logout-item" @click="handleLogout">
@@ -35,7 +35,7 @@
         </template>
         <template v-else>
           <div class="flex shrink-0 hover:bg-[#f5f7fa] p-1 rounded-md">
-            <el-text class="cursor-pointer font-normal" @click="handleLogin">未登录</el-text>
+            <el-text class="unlogin cursor-pointer font-normal" @click="handleLogin">未登录</el-text>
           </div>
           <!-- <el-button type="primary" @click="handleLogin">登录</el-button> -->
         </template>
@@ -93,7 +93,7 @@
                 />
               </div>
 
-              <div class="flex justify-end items-center">
+              <div class="table-action flex justify-end items-center">
                 <el-button type="primary" @click="handleQuery">查询</el-button>
                 <el-button @click="handleRest">重置</el-button>
               </div>
@@ -108,7 +108,7 @@
               <div class="flex items-center">
                 <el-tooltip content="切换表格模式" placement="top">
                   <!-- <el-icon @click="refreshData" class="cursor-pointer mr-[15px]"><RefreshRight /></el-icon> -->
-                  <el-icon class="cursor-pointer mr-[15px]" @click="changeTable"><Guide /></el-icon>
+                  <el-icon class="chagne-table-icon cursor-pointer mr-[15px]" @click="changeTable"><Guide /></el-icon>
                 </el-tooltip>
                 <el-tooltip content="导出数据" placement="top">
                   <el-dropdown class="export-dropdown" trigger="click" placement="bottom-end" :teleported="false">
@@ -212,7 +212,7 @@
 </template>
 
 <script setup lang="ts">
-import type { CheckboxValueType } from "element-plus";
+import type { CheckboxValueType, SortBy } from "element-plus";
 import { User, Setting, House, Search, Grid, Guide, Document, Moon } from "@element-plus/icons-vue";
 import CustomDropdown from "./CustomDropdown.vue";
 import type { SelectedOptions, TableRow, ColumnConfig } from "../types/home";
@@ -223,7 +223,6 @@ import { useMutation } from "@tanstack/vue-query";
 import { studentsInfo, studentsInfoError } from "../apis/home";
 import { useDebounceFn } from "@vueuse/core";
 import { TableV2SortOrder } from "element-plus";
-import type { SortBy } from "element-plus";
 import { useFileExport } from "@/utils/tableExport";
 import { getFilterData, getSortedTableData } from "./composables/useHomeLogic";
 const circleUrl = "https://dev-file.iviewui.com/userinfoPDvn9gKWYihR24SpgC319vXY8qniCqj4/avatar";
@@ -296,12 +295,15 @@ const { filters } = storeToRefs(filterStore);
 const isLogin = computed(() => loginStore.isLogin);
 
 const visibleColumns = computed(() => {
+  const visibleCols = columns.value.filter((col) => col.visible);
+  const nonIdColsCount = visibleCols.filter((col) => col.key !== "id").length;
   return columns.value
     .filter((col) => col.visible)
     .map((col) => ({
       ...col,
       dataKey: col.key,
       title: col.label,
+      width: col.key === "id" ? 80 : `calc((100% - 80px) / ${nonIdColsCount})`,
     }));
 });
 

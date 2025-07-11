@@ -70,7 +70,7 @@
           :class="['filter-options flex items-center px-3 py-2 cursor-pointer transition-colors', isOptionSelected(selectedValues, option) ? themeConfig.optionSelected : themeConfig.option]"
         >
           <!-- 多选框 -->
-          <input v-if="multiple" type="checkbox" :checked="isOptionSelected(selectedValues, option)" class="mr-2 text-blue-600 focus:ring-blue-500" @click.stop />
+          <input v-if="multiple" type="checkbox" :checked="isOptionSelected(selectedValues, option)" class="mr-2 text-blue-600 focus:ring-blue-500" />
 
           <!-- 选项内容 -->
           <div class="flex-1">
